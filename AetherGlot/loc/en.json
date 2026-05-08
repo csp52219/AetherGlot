@@ -1,0 +1,230 @@
+{
+  "ConfigWindowTitle": {
+    "Message": "AetherGlot Settings",
+    "Description": ""
+  },
+  "CommandHelp": {
+    "Message": "Open AetherGlot configuration",
+    "Description": ""
+  },
+  "ProviderSection": {
+    "Message": "Provider Settings",
+    "Description": ""
+  },
+  "ProviderLabel": {
+    "Message": "Provider",
+    "Description": ""
+  },
+  "ModelLabel": {
+    "Message": "Model",
+    "Description": ""
+  },
+  "EndpointLabel": {
+    "Message": "Custom Endpoint (optional)",
+    "Description": ""
+  },
+  "ApiKeyLabel": {
+    "Message": "API Key",
+    "Description": ""
+  },
+  "HideBtn": {
+    "Message": "Hide",
+    "Description": ""
+  },
+  "ShowBtn": {
+    "Message": "Show",
+    "Description": ""
+  },
+  "TranslationSection": {
+    "Message": "Translation",
+    "Description": ""
+  },
+  "InboundLabel": {
+    "Message": "Enable inbound translation (receive)",
+    "Description": ""
+  },
+  "OutboundLabel": {
+    "Message": "Enable outbound translation (send)",
+    "Description": ""
+  },
+  "ChannelSection": {
+    "Message": "Enabled Chat Channels",
+    "Description": ""
+  },
+  "ChannelSay": {
+    "Message": "Say",
+    "Description": ""
+  },
+  "ChannelShout": {
+    "Message": "Shout",
+    "Description": ""
+  },
+  "ChannelYell": {
+    "Message": "Yell",
+    "Description": ""
+  },
+  "ChannelParty": {
+    "Message": "Party",
+    "Description": ""
+  },
+  "ChannelAlly": {
+    "Message": "Alliance",
+    "Description": ""
+  },
+  "ChannelFc": {
+    "Message": "Free Company",
+    "Description": ""
+  },
+  "ChannelLs1": {
+    "Message": "LS 1",
+    "Description": ""
+  },
+  "ChannelLs2": {
+    "Message": "LS 2",
+    "Description": ""
+  },
+  "ChannelLs3": {
+    "Message": "LS 3",
+    "Description": ""
+  },
+  "ChannelLs4": {
+    "Message": "LS 4",
+    "Description": ""
+  },
+  "ChannelLs5": {
+    "Message": "LS 5",
+    "Description": ""
+  },
+  "ChannelLs6": {
+    "Message": "LS 6",
+    "Description": ""
+  },
+  "ChannelLs7": {
+    "Message": "LS 7",
+    "Description": ""
+  },
+  "ChannelLs8": {
+    "Message": "LS 8",
+    "Description": ""
+  },
+  "ChannelCwls1": {
+    "Message": "CWLS 1",
+    "Description": ""
+  },
+  "ChannelCwls2": {
+    "Message": "CWLS 2",
+    "Description": ""
+  },
+  "ChannelCwls3": {
+    "Message": "CWLS 3",
+    "Description": ""
+  },
+  "ChannelCwls4": {
+    "Message": "CWLS 4",
+    "Description": ""
+  },
+  "ChannelCwls5": {
+    "Message": "CWLS 5",
+    "Description": ""
+  },
+  "ChannelCwls6": {
+    "Message": "CWLS 6",
+    "Description": ""
+  },
+  "ChannelCwls7": {
+    "Message": "CWLS 7",
+    "Description": ""
+  },
+  "ChannelCwls8": {
+    "Message": "CWLS 8",
+    "Description": ""
+  },
+  "OutboundSection": {
+    "Message": "Outbound Prompt (for send translation)",
+    "Description": ""
+  },
+  "ResetPromptBtn": {
+    "Message": "Reset to Default",
+    "Description": ""
+  },
+  "DefaultOutboundChannelLabel": {
+    "Message": "Default Send Channel",
+    "Description": ""
+  },
+  "SaveBtn": {
+    "Message": "Save",
+    "Description": ""
+  },
+  "SendCommandHelp": {
+    "Message": "Translate and send: /agsend [channel] <text>",
+    "Description": ""
+  },
+  "OutboundDisabled": {
+    "Message": "[AetherGlot] Outbound translation is disabled.",
+    "Description": ""
+  },
+  "SendCommandUsage": {
+    "Message": "[AetherGlot] Usage: /agsend [channel] <text>\nPrefixes: s sh y p a fc nn l1-l8 cw1-cw8",
+    "Description": ""
+  },
+  "SendPreviewTitle": {
+    "Message": "AetherGlot — Send Preview",
+    "Description": ""
+  },
+  "SendPreviewOriginal": {
+    "Message": "Original:",
+    "Description": ""
+  },
+  "SendPreviewTranslation": {
+    "Message": "Translation:",
+    "Description": ""
+  },
+  "SendPreviewTranslating": {
+    "Message": "Translating...",
+    "Description": ""
+  },
+  "SendPreviewChannel": {
+    "Message": "Channel:",
+    "Description": ""
+  },
+  "SendPreviewSendBtn": {
+    "Message": "Send",
+    "Description": ""
+  },
+  "SendPreviewCancelBtn": {
+    "Message": "Cancel",
+    "Description": ""
+  },
+  "SendPreviewNoApiKey": {
+    "Message": "Provider or API key not configured.",
+    "Description": ""
+  },
+  "SkipOwnLabel": {
+    "Message": "Skip translation for own messages",
+    "Description": ""
+  },
+  "ChannelNoviceNetwork": {
+    "Message": "Novice Network",
+    "Description": ""
+  },
+  "AlwaysTranslateLabel": {
+    "Message": "Translate even if message is in client language",
+    "Description": ""
+  },
+  "CommandHelpSection": {
+    "Message": "Send Command",
+    "Description": ""
+  },
+  "CommandHelpLine2": {
+    "Message": "/agsend <prefix> <text>    — translate and send to the specified channel",
+    "Description": ""
+  },
+  "CommandHelpLine1": {
+    "Message": "/agsend <text>             — translate and send using the default channel",
+    "Description": ""
+  },
+  "CommandHelpPrefixes": {
+    "Message": "Prefixes:  s  sh  y  p  a  fc  nn  l1-l8  cw1-cw8",
+    "Description": ""
+  }
+}

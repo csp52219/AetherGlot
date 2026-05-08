@@ -1,0 +1,35 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+
+  <PropertyGroup>
+    <!-- SDK 15 sets: net10.0-windows, LangVersion=14.0, Nullable, AllowUnsafeBlocks, ProduceReferenceAssembly, x64 -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>AetherGlot</RootNamespace>
+    <AssemblyName>AetherGlot</AssemblyName>
+    <Version>1.0.0.0</Version>
+    <!-- DalamudPackager manifest -->
+    <Name>AetherGlot</Name>
+    <InternalName>AetherGlot</InternalName>
+    <Author>AetherGlot Contributors</Author>
+    <Punchline>FFXIV in-game chat translation powered by LLM APIs</Punchline>
+    <Description>Translates FFXIV in-game chat in real time using AI (OpenAI, Gemini, Claude, or any OpenAI-compatible endpoint).</Description>
+    <Tags>translation;chat;ai;llm</Tags>
+  </PropertyGroup>
+
+  <!-- CheapLoc is in the Dalamud dev folder but is not auto-referenced by SDK 14 -->
+  <ItemGroup>
+    <Reference Include="CheapLoc" Private="false" />
+  </ItemGroup>
+
+  <!-- Core class library (no Dalamud deps — also referenced by AetherGlot.Tests) -->
+  <ItemGroup>
+    <ProjectReference Include="..\AetherGlot.Core\AetherGlot.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Copy locale files to output directory -->
+  <ItemGroup>
+    <Content Include="loc\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

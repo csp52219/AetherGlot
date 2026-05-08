@@ -1,0 +1,230 @@
+{
+  "ConfigWindowTitle": {
+    "Message": "AetherGlot 設定",
+    "Description": ""
+  },
+  "CommandHelp": {
+    "Message": "AetherGlot 設定を開く",
+    "Description": ""
+  },
+  "ProviderSection": {
+    "Message": "プロバイダー設定",
+    "Description": ""
+  },
+  "ProviderLabel": {
+    "Message": "プロバイダー",
+    "Description": ""
+  },
+  "ModelLabel": {
+    "Message": "モデル",
+    "Description": ""
+  },
+  "EndpointLabel": {
+    "Message": "カスタムエンドポイント（任意）",
+    "Description": ""
+  },
+  "ApiKeyLabel": {
+    "Message": "API キー",
+    "Description": ""
+  },
+  "HideBtn": {
+    "Message": "非表示",
+    "Description": ""
+  },
+  "ShowBtn": {
+    "Message": "表示",
+    "Description": ""
+  },
+  "TranslationSection": {
+    "Message": "翻訳設定",
+    "Description": ""
+  },
+  "InboundLabel": {
+    "Message": "受信翻訳を有効にする",
+    "Description": ""
+  },
+  "OutboundLabel": {
+    "Message": "送信翻訳を有効にする",
+    "Description": ""
+  },
+  "ChannelSection": {
+    "Message": "翻訳対象チャットチャンネル",
+    "Description": ""
+  },
+  "ChannelSay": {
+    "Message": "Say",
+    "Description": ""
+  },
+  "ChannelShout": {
+    "Message": "Shout",
+    "Description": ""
+  },
+  "ChannelYell": {
+    "Message": "Yell",
+    "Description": ""
+  },
+  "ChannelParty": {
+    "Message": "Party",
+    "Description": ""
+  },
+  "ChannelAlly": {
+    "Message": "Alliance",
+    "Description": ""
+  },
+  "ChannelFc": {
+    "Message": "FreeCompany",
+    "Description": ""
+  },
+  "ChannelLs1": {
+    "Message": "LS 1",
+    "Description": ""
+  },
+  "ChannelLs2": {
+    "Message": "LS 2",
+    "Description": ""
+  },
+  "ChannelLs3": {
+    "Message": "LS 3",
+    "Description": ""
+  },
+  "ChannelLs4": {
+    "Message": "LS 4",
+    "Description": ""
+  },
+  "ChannelLs5": {
+    "Message": "LS 5",
+    "Description": ""
+  },
+  "ChannelLs6": {
+    "Message": "LS 6",
+    "Description": ""
+  },
+  "ChannelLs7": {
+    "Message": "LS 7",
+    "Description": ""
+  },
+  "ChannelLs8": {
+    "Message": "LS 8",
+    "Description": ""
+  },
+  "ChannelCwls1": {
+    "Message": "CWLS 1",
+    "Description": ""
+  },
+  "ChannelCwls2": {
+    "Message": "CWLS 2",
+    "Description": ""
+  },
+  "ChannelCwls3": {
+    "Message": "CWLS 3",
+    "Description": ""
+  },
+  "ChannelCwls4": {
+    "Message": "CWLS 4",
+    "Description": ""
+  },
+  "ChannelCwls5": {
+    "Message": "CWLS 5",
+    "Description": ""
+  },
+  "ChannelCwls6": {
+    "Message": "CWLS 6",
+    "Description": ""
+  },
+  "ChannelCwls7": {
+    "Message": "CWLS 7",
+    "Description": ""
+  },
+  "ChannelCwls8": {
+    "Message": "CWLS 8",
+    "Description": ""
+  },
+  "OutboundSection": {
+    "Message": "送信プロンプト（送信翻訳用）",
+    "Description": ""
+  },
+  "ResetPromptBtn": {
+    "Message": "デフォルトに戻す",
+    "Description": ""
+  },
+  "DefaultOutboundChannelLabel": {
+    "Message": "デフォルト送信チャンネル",
+    "Description": ""
+  },
+  "SaveBtn": {
+    "Message": "保存",
+    "Description": ""
+  },
+  "SendCommandHelp": {
+    "Message": "翻訳して送信: /agsend [チャンネル] <テキスト>",
+    "Description": ""
+  },
+  "OutboundDisabled": {
+    "Message": "[AetherGlot] 送信翻訳は無効です。",
+    "Description": ""
+  },
+  "SendCommandUsage": {
+    "Message": "[AetherGlot] 使い方: /agsend [チャンネル] <翻訳して送信するテキスト>\nプレフィックス: s sh y p a fc nn l1-l8 cw1-cw8",
+    "Description": ""
+  },
+  "SendPreviewTitle": {
+    "Message": "AetherGlot — 送信プレビュー",
+    "Description": ""
+  },
+  "SendPreviewOriginal": {
+    "Message": "原文:",
+    "Description": ""
+  },
+  "SendPreviewTranslation": {
+    "Message": "翻訳:",
+    "Description": ""
+  },
+  "SendPreviewTranslating": {
+    "Message": "翻訳中...",
+    "Description": ""
+  },
+  "SendPreviewChannel": {
+    "Message": "チャンネル:",
+    "Description": ""
+  },
+  "SendPreviewSendBtn": {
+    "Message": "送信",
+    "Description": ""
+  },
+  "SendPreviewCancelBtn": {
+    "Message": "キャンセル",
+    "Description": ""
+  },
+  "SendPreviewNoApiKey": {
+    "Message": "プロバイダーまたは API キーが設定されていません。",
+    "Description": ""
+  },
+  "SkipOwnLabel": {
+    "Message": "自分のメッセージは翻訳しない",
+    "Description": ""
+  },
+  "ChannelNoviceNetwork": {
+    "Message": "ビギナーチャンネル",
+    "Description": ""
+  },
+  "AlwaysTranslateLabel": {
+    "Message": "クライアントの言語と同じメッセージも翻訳する",
+    "Description": ""
+  },
+  "CommandHelpSection": {
+    "Message": "送信コマンド",
+    "Description": ""
+  },
+  "CommandHelpLine2": {
+    "Message": "/agsend <プレフィックス> <テキスト>  — 指定チャンネルに翻訳して送信",
+    "Description": ""
+  },
+  "CommandHelpLine1": {
+    "Message": "/agsend <テキスト>                  — デフォルトチャンネルに翻訳して送信",
+    "Description": ""
+  },
+  "CommandHelpPrefixes": {
+    "Message": "プレフィックス:  s  sh  y  p  a  fc  nn  l1-l8  cw1-cw8",
+    "Description": ""
+  }
+}

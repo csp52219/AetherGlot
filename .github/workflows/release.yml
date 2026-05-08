@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*.*"   # e.g. v1.0.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore
+        run: dotnet restore AetherGlot.sln
+
+      - name: Build Release
+        run: dotnet build AetherGlot/AetherGlot.csproj -c Release --no-restore
+
+      # Pack the plugin output into latest.zip
+      - name: Create plugin zip
+        shell: pwsh
+        run: |
+          $src = "AetherGlot/bin/Release"
+          Compress-Archive -Path "$src/*" -DestinationPath latest.zip -Force
+
+      # Generate repo.json from the plugin manifest + tag version
+      - name: Generate repo.json
+        shell: pwsh
+        run: |
+          $tag     = "${{ github.ref_name }}"           # e.g. v1.0.0.0
+          $version = $tag.TrimStart("v")                # e.g. 1.0.0.0
+          $owner   = "${{ github.repository_owner }}"
+          $repo    = "${{ github.event.repository.name }}"
+          $base    = "https://github.com/$owner/$repo/releases/latest/download"
+
+          $manifest = Get-Content "AetherGlot/bin/Release/AetherGlot.json" | ConvertFrom-Json
+
+          $entry = [ordered]@{
+            Author             = $manifest.Author
+            Name               = $manifest.Name
+            InternalName       = $manifest.InternalName
+            AssemblyVersion    = $version
+            Description        = $manifest.Description
+            ApplicableVersion  = "any"
+            Tags               = $manifest.Tags
+            DalamudApiLevel    = $manifest.DalamudApiLevel
+            Punchline          = $manifest.Punchline
+            DownloadLinkInstall   = "$base/latest.zip"
+            DownloadLinkUpdate    = "$base/latest.zip"
+            DownloadLinkTesting   = "$base/latest.zip"
+          }
+
+          ConvertTo-Json @($entry) -Depth 5 | Set-Content repo.json -Encoding UTF8NoBOM
+          Write-Host "Generated repo.json for version $version"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            latest.zip
+            repo.json

@@ -1,0 +1,30 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio artifacts
+*.user
+*.suo
+.vs/
+*.vsidx
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Dalamud – never commit plugin config (contains API keys!)
+**/Configuration.json
+
+# API keys / secrets
+*.env
+.env*
+secrets.json
+
+# Debug symbols and XML docs (generated at build time)
+*.pdb
+*.xml
+
+# OS artifacts
+Thumbs.db
+.DS_Store
+desktop.ini

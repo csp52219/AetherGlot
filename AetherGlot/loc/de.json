@@ -1,0 +1,230 @@
+{
+  "ConfigWindowTitle": {
+    "Message": "AetherGlot Einstellungen",
+    "Description": ""
+  },
+  "CommandHelp": {
+    "Message": "AetherGlot-Einstellungen öffnen",
+    "Description": ""
+  },
+  "ProviderSection": {
+    "Message": "Anbieter-Einstellungen",
+    "Description": ""
+  },
+  "ProviderLabel": {
+    "Message": "Anbieter",
+    "Description": ""
+  },
+  "ModelLabel": {
+    "Message": "Modell",
+    "Description": ""
+  },
+  "EndpointLabel": {
+    "Message": "Benutzerdefinierter Endpunkt (optional)",
+    "Description": ""
+  },
+  "ApiKeyLabel": {
+    "Message": "API-Schlüssel",
+    "Description": ""
+  },
+  "HideBtn": {
+    "Message": "Verbergen",
+    "Description": ""
+  },
+  "ShowBtn": {
+    "Message": "Anzeigen",
+    "Description": ""
+  },
+  "TranslationSection": {
+    "Message": "Übersetzung",
+    "Description": ""
+  },
+  "InboundLabel": {
+    "Message": "Eingehende Übersetzung aktivieren (empfangen)",
+    "Description": ""
+  },
+  "OutboundLabel": {
+    "Message": "Ausgehende Übersetzung aktivieren (senden)",
+    "Description": ""
+  },
+  "ChannelSection": {
+    "Message": "Aktivierte Chat-Kanäle",
+    "Description": ""
+  },
+  "ChannelSay": {
+    "Message": "Sagen",
+    "Description": ""
+  },
+  "ChannelShout": {
+    "Message": "Rufen",
+    "Description": ""
+  },
+  "ChannelYell": {
+    "Message": "Schreien",
+    "Description": ""
+  },
+  "ChannelParty": {
+    "Message": "Gruppe",
+    "Description": ""
+  },
+  "ChannelAlly": {
+    "Message": "Allianz",
+    "Description": ""
+  },
+  "ChannelFc": {
+    "Message": "Freie Gesellschaft",
+    "Description": ""
+  },
+  "ChannelLs1": {
+    "Message": "LS 1",
+    "Description": ""
+  },
+  "ChannelLs2": {
+    "Message": "LS 2",
+    "Description": ""
+  },
+  "ChannelLs3": {
+    "Message": "LS 3",
+    "Description": ""
+  },
+  "ChannelLs4": {
+    "Message": "LS 4",
+    "Description": ""
+  },
+  "ChannelLs5": {
+    "Message": "LS 5",
+    "Description": ""
+  },
+  "ChannelLs6": {
+    "Message": "LS 6",
+    "Description": ""
+  },
+  "ChannelLs7": {
+    "Message": "LS 7",
+    "Description": ""
+  },
+  "ChannelLs8": {
+    "Message": "LS 8",
+    "Description": ""
+  },
+  "ChannelCwls1": {
+    "Message": "CWLS 1",
+    "Description": ""
+  },
+  "ChannelCwls2": {
+    "Message": "CWLS 2",
+    "Description": ""
+  },
+  "ChannelCwls3": {
+    "Message": "CWLS 3",
+    "Description": ""
+  },
+  "ChannelCwls4": {
+    "Message": "CWLS 4",
+    "Description": ""
+  },
+  "ChannelCwls5": {
+    "Message": "CWLS 5",
+    "Description": ""
+  },
+  "ChannelCwls6": {
+    "Message": "CWLS 6",
+    "Description": ""
+  },
+  "ChannelCwls7": {
+    "Message": "CWLS 7",
+    "Description": ""
+  },
+  "ChannelCwls8": {
+    "Message": "CWLS 8",
+    "Description": ""
+  },
+  "OutboundSection": {
+    "Message": "Ausgehendes Prompt (für Sende-Übersetzung)",
+    "Description": ""
+  },
+  "ResetPromptBtn": {
+    "Message": "Auf Standard zurücksetzen",
+    "Description": ""
+  },
+  "DefaultOutboundChannelLabel": {
+    "Message": "Standard-Sendekanal",
+    "Description": ""
+  },
+  "SaveBtn": {
+    "Message": "Speichern",
+    "Description": ""
+  },
+  "SendCommandHelp": {
+    "Message": "Übersetzen und senden: /agsend [Kanal] <Text>",
+    "Description": ""
+  },
+  "OutboundDisabled": {
+    "Message": "[AetherGlot] Ausgehende Übersetzung ist deaktiviert.",
+    "Description": ""
+  },
+  "SendCommandUsage": {
+    "Message": "[AetherGlot] Verwendung: /agsend [Kanal] <Text>\nPräfixe: s sh y p a fc nn l1-l8 cw1-cw8",
+    "Description": ""
+  },
+  "SendPreviewTitle": {
+    "Message": "AetherGlot — Sende-Vorschau",
+    "Description": ""
+  },
+  "SendPreviewOriginal": {
+    "Message": "Original:",
+    "Description": ""
+  },
+  "SendPreviewTranslation": {
+    "Message": "Übersetzung:",
+    "Description": ""
+  },
+  "SendPreviewTranslating": {
+    "Message": "Übersetze...",
+    "Description": ""
+  },
+  "SendPreviewChannel": {
+    "Message": "Kanal:",
+    "Description": ""
+  },
+  "SendPreviewSendBtn": {
+    "Message": "Senden",
+    "Description": ""
+  },
+  "SendPreviewCancelBtn": {
+    "Message": "Abbrechen",
+    "Description": ""
+  },
+  "SendPreviewNoApiKey": {
+    "Message": "Anbieter oder API-Schlüssel nicht konfiguriert.",
+    "Description": ""
+  },
+  "SkipOwnLabel": {
+    "Message": "Eigene Nachrichten nicht übersetzen",
+    "Description": ""
+  },
+  "ChannelNoviceNetwork": {
+    "Message": "Neulings-Netzwerk",
+    "Description": ""
+  },
+  "AlwaysTranslateLabel": {
+    "Message": "Auch Nachrichten in der Client-Sprache übersetzen",
+    "Description": ""
+  },
+  "CommandHelpSection": {
+    "Message": "Sendebefehl",
+    "Description": ""
+  },
+  "CommandHelpLine2": {
+    "Message": "/agsend <Präfix> <Text>    — übersetzen und an angegebenen Kanal senden",
+    "Description": ""
+  },
+  "CommandHelpLine1": {
+    "Message": "/agsend <Text>             — übersetzen und an Standard-Kanal senden",
+    "Description": ""
+  },
+  "CommandHelpPrefixes": {
+    "Message": "Präfixe:  s  sh  y  p  a  fc  nn  l1-l8  cw1-cw8",
+    "Description": ""
+  }
+}

@@ -1,0 +1,13 @@
+# AetherGlot Integration Test — 1Password secret references
+#
+# This file contains op:// references only — no real secrets.
+# It is safe to commit to version control.
+#
+# Edit the paths below to match your 1Password vault structure.
+# Use `op item list` and `op item get <item> --format json` to find exact field names.
+#
+# Format: ENV_VAR_NAME=op://VaultName/ItemName/FieldName
+#
+AETHERGLOT_CLAUDE_KEY=op://Personal/Claude/SecretKey/AETHERGLOT_CLAUDE_KEY
+AETHERGLOT_OPENAI_KEY=op://Personal/OpenAI/AETHERGLOT_OPENAI_KEY
+AETHERGLOT_GEMINI_KEY=op://Personal/google.com/AETHERGLOT_GEMINI_KEY
