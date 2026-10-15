@@ -564,7 +564,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             catch (Exception ex)
             {
                 editorError = string.Format(Tr.Get("GlossarySaveFailed", "Could not save ({0})."), ex.GetType().Name);
-                Plugin.Log.Error("[AetherGlot] Could not save {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
+                Plugin.Log.Error("Could not save {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
             }
             finally
             {

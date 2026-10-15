@@ -129,9 +129,27 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         var showChips = log.ShowTermChips;
         if (ImGui.Checkbox(Tr.Get("LogShowChips", "Term chips"), ref showChips)) { log.ShowTermChips = showChips; config.Save(); }
 
+        // Clear (Shift+click, like deleting a dictionary entry) and Settings, right-aligned
+        var clearLabel    = Tr.Get("LogClear", "Clear");
+        var settingsLabel = Tr.Get("LogSettingsBtn", "Settings");
+        var pad   = ImGui.GetStyle().FramePadding.X * 2;
+        var width = ImGui.CalcTextSize(clearLabel).X + ImGui.CalcTextSize(settingsLabel).X + pad * 2 + ImGui.GetStyle().ItemSpacing.X;
+        // Stay on this row only if the buttons fit; otherwise wrap them to the next one
+        var right   = ImGui.GetWindowContentRegionMax().X;
+        var lastEnd = ImGui.GetItemRectMax().X - ImGui.GetWindowPos().X + ImGui.GetScrollX();
+        if (lastEnd + ImGui.GetStyle().ItemSpacing.X + width <= right)
+            ImGui.SameLine();
+        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), right - width));
+        if (ImGui.SmallButton(clearLabel) && ImGui.GetIO().KeyShift)
+        {
+            plugin.TranslationLog.Clear();
+            expanded.Clear();
+            scrollToBottom = true;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(Tr.Get("LogClearTip", "Hold Shift and click to clear the translation log. Cached translations are kept."));
         ImGui.SameLine();
-        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - 70));
-        if (ImGui.SmallButton(Tr.Get("LogSettingsBtn", "Settings")))
+        if (ImGui.SmallButton(settingsLabel))
             plugin.OpenSettings();
     }
 

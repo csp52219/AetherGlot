@@ -1403,8 +1403,16 @@
     "Message": "Pastilles de termes",
     "Description": ""
   },
+  "LogClear": {
+    "Message": "Effacer",
+    "Description": ""
+  },
   "LogSettingsBtn": {
     "Message": "Paramètres",
+    "Description": ""
+  },
+  "LogClearTip": {
+    "Message": "Maintenez Maj et cliquez pour effacer le journal de traduction. Les traductions en cache sont conservées.",
     "Description": ""
   },
   "LogNotTranslated": {

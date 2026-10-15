@@ -61,14 +61,14 @@ public sealed unsafe class DalamudChatSender : IChatSender
     {
         if (!ChannelCommands.TryGetValue(channel, out var cmd))
         {
-            log.Warning("[AetherGlot] Unsupported outbound channel: {Channel}", channel);
+            log.Warning("Unsupported outbound channel: {Channel}", channel);
             return;
         }
 
         var (clean, truncated) = ChatText.Sanitize(text);
         if (clean.Length == 0) return;
         if (truncated)
-            log.Information("[AetherGlot] Message was longer than {Max} bytes and was shortened.", ChatText.MaxBytes);
+            log.Information("Message was longer than {Max} bytes and was shortened.", ChatText.MaxBytes);
 
         var line = $"{cmd} {clean}";
         _ = framework.RunOnFrameworkThread(() => Send(line));
@@ -80,7 +80,7 @@ public sealed unsafe class DalamudChatSender : IChatSender
         var uiModule = UIModule.Instance();
         if (uiModule == null)
         {
-            log.Warning("[AetherGlot] Chat is not available right now; message not sent.");
+            log.Warning("Chat is not available right now; message not sent.");
             return;
         }
 
@@ -89,7 +89,7 @@ public sealed unsafe class DalamudChatSender : IChatSender
         {
             str->SanitizeString(Allowed, null);
             uiModule->ProcessChatBoxEntry(str, nint.Zero, false);
-            log.Information("[AetherGlot] Sent a message: {Command} ({Bytes} bytes).", line.Split(' ', 2)[0], (int)str->Length);
+            log.Information("Sent a message: {Command} ({Bytes} bytes).", line.Split(' ', 2)[0], (int)str->Length);
         }
         finally
         {

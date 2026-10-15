@@ -13,6 +13,7 @@
     <Punchline>FFXIV in-game chat translation powered by LLM APIs</Punchline>
     <Description>Translates FFXIV chat in real time with an LLM (OpenAI, Claude, Gemini, LiteLLM or any OpenAI-compatible endpoint). Party bubbles, translation log, send preview with tone and back-translation, game-data and community dictionaries, auto-translate aware. UI in English, Japanese, German and French.</Description>
     <Tags>translation;chat;ai;llm</Tags>
+    <RepoUrl>https://github.com/csp52219/AetherGlot</RepoUrl>
   </PropertyGroup>
 
   <!-- CheapLoc is in the Dalamud dev folder but is not auto-referenced by the SDK -->

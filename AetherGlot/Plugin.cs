@@ -172,7 +172,7 @@ public sealed class Plugin : IDalamudPlugin
             return new CredentialManagerSecretStore();
 
         // Dalamud only runs on Windows (or Wine, which provides advapi32); keep a safe fallback anyway
-        Log.Warning("[AetherGlot] Windows Credential Manager is unavailable; secrets will not be persisted.");
+        Log.Warning("Windows Credential Manager is unavailable; secrets will not be persisted.");
         return new InMemorySecretStore();
     }
 
@@ -204,7 +204,7 @@ public sealed class Plugin : IDalamudPlugin
         }
         catch (Exception ex)
         {
-            Log.Warning("[AetherGlot] Could not load translations ({Type}); using English.", ex.GetType().Name);
+            Log.Warning("Could not load translations ({Type}); using English.", ex.GetType().Name);
             Loc.SetupWithFallbacks(Tr.Assembly);
         }
     }
@@ -492,7 +492,7 @@ public sealed class Plugin : IDalamudPlugin
         }
         catch (Exception ex)
         {
-            Log.Error("[AetherGlot] Re-translation failed ({Type}).", ex.GetType().Name);
+            Log.Error("Re-translation failed ({Type}).", ex.GetType().Name);
         }
     }
 
@@ -512,7 +512,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             catch (Exception ex)
             {
-                Log.Error("[AetherGlot] Could not save to {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
+                Log.Error("Could not save to {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
             }
         });
     }

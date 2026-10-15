@@ -31,7 +31,7 @@ internal static class GameDataGlossaryLoader
             catch (Exception ex)
             {
                 errors.Add($"{name}: {ex.GetType().Name}");
-                log.Warning("[AetherGlot] Could not load {Section} from game data ({Type}: {Message}).", name, ex.GetType().Name, ex.Message);
+                log.Warning("Could not load {Section} from game data ({Type}: {Message}).", name, ex.GetType().Name, ex.Message);
             }
         }
 
@@ -152,7 +152,7 @@ internal static class GameDataGlossaryLoader
             if (raw.Length == 0) continue;
             if (LookupTable.Parse(raw) is not { } table)
             {
-                log.Debug("[AetherGlot] Unsupported auto-translate lookup table for group {Group}.", row.Group);
+                log.Debug("Unsupported auto-translate lookup table for group {Group}.", row.Group);
                 continue;
             }
             var catJa = ja.GetRowOrDefault(row.RowId) is { } j ? TermNormalizer.StripDecorations(Text(j.Text)) : string.Empty;
@@ -198,7 +198,7 @@ internal static class GameDataGlossaryLoader
             }
             catch (Exception ex)
             {
-                log.Debug("[AetherGlot] Skipped auto-translate group {Group} ({Sheet}): {Type}.", h.Group, h.Table.Sheet, ex.GetType().Name);
+                log.Debug("Skipped auto-translate group {Group} ({Sheet}): {Type}.", h.Group, h.Table.Sheet, ex.GetType().Name);
             }
         }
 
