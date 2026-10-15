@@ -37,8 +37,8 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
         if (catalog.Entries.Count == 0)
         {
             ImGui.TextColored(Theme.TextMuted, plugin.Glossary.IsLoading
-                ? Loc.Localize("AtLoading", "Reading the game data…")
-                : Loc.Localize("AtEmpty", "No auto-translate data. Enable \"Use game data\" in the Dictionary settings."));
+                ? Tr.Get("AtLoading", "Reading the game data…")
+                : Tr.Get("AtEmpty", "No auto-translate data. Enable \"Use game data\" in the Dictionary settings."));
             return;
         }
 
@@ -62,7 +62,7 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
 
     private void DrawFlow()
     {
-        ImGui.TextColored(Theme.Accent, Loc.Localize("AtFlow", "How a phrase is handled"));
+        ImGui.TextColored(Theme.Accent, Tr.Get("AtFlow", "How a phrase is handled"));
 
         // The latest message that contained auto-translate phrases, or a fixed example
         var entry = plugin.TranslationLog.Snapshot().LastOrDefault(e => e.Message.AutoTranslateParts.Count > 0);
@@ -80,11 +80,11 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
             displayed       = "【こんにちは！】 魔猿 → 走竜 → 猛虎の順でお願い";
         }
 
-        Step("1", Loc.Localize("AtFlowReceived", "Received (payload IDs)"), ids, Theme.AutoTranslate);
-        Step("2", Loc.Localize("AtFlowSent", "Sent to the model"), placeholderized, Theme.TextDim);
-        Step("3", Loc.Localize("AtFlowShown", "Shown (phrase filled back in)"), displayed, Theme.Text);
+        Step("1", Tr.Get("AtFlowReceived", "Received (payload IDs)"), ids, Theme.AutoTranslate);
+        Step("2", Tr.Get("AtFlowSent", "Sent to the model"), placeholderized, Theme.TextDim);
+        Step("3", Tr.Get("AtFlowShown", "Shown (phrase filled back in)"), displayed, Theme.Text);
         if (entry is null)
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("AtFlowExample", "(example — the latest received phrase appears here)"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("AtFlowExample", "(example — the latest received phrase appears here)"));
     }
 
     private static void Step(string n, string label, string value, Vector4 color)
@@ -103,7 +103,7 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
     private void DrawCategories(AutoTranslateCatalog catalog)
     {
         var japanese = Plugin.ClientState.ClientLanguage == Dalamud.Game.ClientLanguage.Japanese;
-        if (ImGui.Selectable($"{Loc.Localize("AtAll", "All")}  ({catalog.Entries.Count:N0})", category is null))
+        if (ImGui.Selectable($"{Tr.Get("AtAll", "All")}  ({catalog.Entries.Count:N0})", category is null))
             category = null;
         foreach (var c in catalog.Categories)
         {
@@ -140,19 +140,19 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
     private void DrawPhrases(IReadOnlyDictionary<string, DateTimeOffset> recent)
     {
         ImGui.SetNextItemWidth(Math.Max(160, ImGui.GetContentRegionAvail().X - 260));
-        ImGui.InputTextWithHint("##atquery", Loc.Localize("AtSearch", "Search Japanese, English or an ID (group:key)"), ref query, 200);
+        ImGui.InputTextWithHint("##atquery", Tr.Get("AtSearch", "Search Japanese, English or an ID (group:key)"), ref query, 200);
         ImGui.SameLine();
-        ImGui.Checkbox(string.Format(Loc.Localize("AtRecentOnly", "Only seen in chat ({0})"), recent.Count), ref recentOnly);
-        ImGui.TextColored(Theme.TextMuted, string.Format(Loc.Localize("AtResults", "{0:N0} phrases · read-only"), results.Count));
+        ImGui.Checkbox(string.Format(Tr.Get("AtRecentOnly", "Only seen in chat ({0})"), recent.Count), ref recentOnly);
+        ImGui.TextColored(Theme.TextMuted, string.Format(Tr.Get("AtResults", "{0:N0} phrases · read-only"), results.Count));
 
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.ScrollY |
                                       ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchProp;
         if (!ImGui.BeginTable("##at", 4, flags)) return;
         ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableSetupColumn("ID", ImGuiTableColumnFlags.WidthStretch, 0.9f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColJa", "Japanese"), ImGuiTableColumnFlags.WidthStretch, 2.5f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColJa", "Japanese"), ImGuiTableColumnFlags.WidthStretch, 2.5f);
         ImGui.TableSetupColumn("English", ImGuiTableColumnFlags.WidthStretch, 2.5f);
-        ImGui.TableSetupColumn(Loc.Localize("AtUsage", "Used for"), ImGuiTableColumnFlags.WidthStretch, 2.4f);
+        ImGui.TableSetupColumn(Tr.Get("AtUsage", "Used for"), ImGuiTableColumnFlags.WidthStretch, 2.4f);
         ImGui.TableHeadersRow();
 
         var clipper = ImGui.ImGuiListClipper();
@@ -182,13 +182,13 @@ public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
 
     private static string UsageLabel(AutoTranslateUsage usage) => usage switch
     {
-        AutoTranslateUsage.JobName    => Loc.Localize("AtUsageJob", "Received: fixed · Sent: replacement candidate"),
-        AutoTranslateUsage.ActionName => Loc.Localize("AtUsageAction", "Also matches typed action names"),
-        AutoTranslateUsage.PlaceName  => Loc.Localize("AtUsagePlace", "Also used as a context hint"),
-        _                             => Loc.Localize("AtUsageDisplay", "Received: shown as is"),
+        AutoTranslateUsage.JobName    => Tr.Get("AtUsageJob", "Received: fixed · Sent: replacement candidate"),
+        AutoTranslateUsage.ActionName => Tr.Get("AtUsageAction", "Also matches typed action names"),
+        AutoTranslateUsage.PlaceName  => Tr.Get("AtUsagePlace", "Also used as a context hint"),
+        _                             => Tr.Get("AtUsageDisplay", "Received: shown as is"),
     };
 
-    private static string Title() => Loc.Localize("AtTitle", "AetherGlot — Auto-translate") + "###AetherGlotAutoTranslate";
+    private static string Title() => Tr.Get("AtTitle", "AetherGlot — Auto-translate") + "###AetherGlotAutoTranslate";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

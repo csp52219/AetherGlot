@@ -62,8 +62,8 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
     {
         if (entry is null && outbound is null)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorEmpty", "Nothing to inspect yet. Use \"Inspect\" on a log entry."));
-            if (ImGui.Button(Loc.Localize("InspectorLatest", "Inspect the latest translation")))
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorEmpty", "Nothing to inspect yet. Use \"Inspect\" on a log entry."));
+            if (ImGui.Button(Tr.Get("InspectorLatest", "Inspect the latest translation")))
                 InspectLatest();
             return;
         }
@@ -80,15 +80,15 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            Panel("##input", "① " + Loc.Localize("InspectorInput", "Input sent"), cell, DrawInput);
+            Panel("##input", "① " + Tr.Get("InspectorInput", "Input sent"), cell, DrawInput);
             ImGui.TableNextColumn();
-            Panel("##hints", "② " + Loc.Localize("InspectorHints", "Context hints"), cell, DrawHints);
+            Panel("##hints", "② " + Tr.Get("InspectorHints", "Context hints"), cell, DrawHints);
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            Panel("##validation", "③ " + Loc.Localize("InspectorValidation", "Validation"), cell, DrawValidation);
+            Panel("##validation", "③ " + Tr.Get("InspectorValidation", "Validation"), cell, DrawValidation);
             ImGui.TableNextColumn();
-            Panel("##attempts", "④ " + Loc.Localize("InspectorAttempts", "Model attempts (raw)"), cell, () => DrawAttempts(settings, secrets));
+            Panel("##attempts", "④ " + Tr.Get("InspectorAttempts", "Model attempts (raw)"), cell, () => DrawAttempts(settings, secrets));
             ImGui.EndTable();
         }
 
@@ -119,20 +119,20 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
             ImGui.SameLine();
             ImGui.TextUnformatted(entry.Sender);
             ImGui.SameLine();
-            ImGui.TextColored(Theme.TextDim, o is null ? Loc.Localize("LogTranslating", "translating…") : KindLabel(o.Kind) + (o.FromCache ? " · cache" : string.Empty));
+            ImGui.TextColored(Theme.TextDim, o is null ? Tr.Get("LogTranslating", "translating…") : KindLabel(o.Kind) + (o.FromCache ? " · cache" : string.Empty));
 
             ImGui.SameLine();
             ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - 220));
             var canRetry = o is not null && !retranslating;
             var disabled1 = !canRetry;
             if (disabled1) ImGui.BeginDisabled();
-            if (ImGui.Button(retranslating ? Loc.Localize("InspectorRetranslating", "Translating…") : Loc.Localize("InspectorRetranslate", "Translate again")))
+            if (ImGui.Button(retranslating ? Tr.Get("InspectorRetranslating", "Translating…") : Tr.Get("InspectorRetranslate", "Translate again")))
                 Retranslate(entry);
             if (disabled1) ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGui.SetTooltip(Loc.Localize("InspectorRetranslateTip", "Same request, cache bypassed. The log entry is updated."));
+                ImGui.SetTooltip(Tr.Get("InspectorRetranslateTip", "Same request, cache bypassed. The log entry is updated."));
             ImGui.SameLine();
-            if (ImGui.Button(Loc.Localize("InspectorLatestShort", "Latest")))
+            if (ImGui.Button(Tr.Get("InspectorLatestShort", "Latest")))
                 InspectLatest();
 
             if (o?.Kind == InboundOutcomeKind.Partial)
@@ -140,9 +140,9 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         }
         else if (outbound is not null)
         {
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("InspectorOutbound", "Outbound (send preview)"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("InspectorOutbound", "Outbound (send preview)"));
             ImGui.SameLine();
-            ImGui.TextColored(outbound.Success ? Theme.Ok : Theme.Warn, outbound.Success ? "OK" : Loc.Localize("InspectorFailed", "failed"));
+            ImGui.TextColored(outbound.Success ? Theme.Ok : Theme.Warn, outbound.Success ? "OK" : Tr.Get("InspectorFailed", "failed"));
         }
 
         // Endpoint and header names; values are never displayed
@@ -162,7 +162,7 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
     {
         var spans = o.Segments.Where(s => s.Kind == SegmentKind.Unresolved).ToList();
         if (spans.Count == 0) return;
-        ImGui.TextColored(Theme.Unresolved, Loc.Localize("InspectorUnresolvedPrompt", "Not in any dictionary — register it so next time it is translated:"));
+        ImGui.TextColored(Theme.Unresolved, Tr.Get("InspectorUnresolvedPrompt", "Not in any dictionary — register it so next time it is translated:"));
         foreach (var u in spans)
         {
             ImGui.SameLine();
@@ -192,9 +192,9 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
     {
         if (entry?.Outcome is { } o)
         {
-            Field(Loc.Localize("InspectorPlaceholderized", "Text (auto-translate → {{atN}})"), o.Request.SourceText);
+            Field(Tr.Get("InspectorPlaceholderized", "Text (auto-translate → {{atN}})"), o.Request.SourceText);
             ImGui.Spacing();
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("InspectorAtMap", "Auto-translate map"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("InspectorAtMap", "Auto-translate map"));
             if (o.Request.AutoTranslateTexts.Count == 0) ImGui.TextColored(Theme.TextMuted, "—");
             foreach (var (id, text) in o.Request.AutoTranslateTexts.OrderBy(p => p.Key, StringComparer.Ordinal))
             {
@@ -208,22 +208,22 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
                 ImGui.TextColored(Theme.TextMuted, "IDs: " + ids);
             }
             ImGui.Spacing();
-            DrawGlossaryHints(o.Request.Glossary, Loc.Localize("InspectorGlossary", "Glossary pairs sent"));
+            DrawGlossaryHints(o.Request.Glossary, Tr.Get("InspectorGlossary", "Glossary pairs sent"));
             ImGui.Spacing();
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("InspectorTarget", "Target language"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("InspectorTarget", "Target language"));
             ImGui.SameLine();
             ImGui.TextUnformatted($"{o.Request.TargetLanguage} ({o.Request.TargetLanguageCode})");
         }
         else if (outbound is { } ob)
         {
-            Field(Loc.Localize("InspectorSource", "Text"), ob.Request.SourceText);
+            Field(Tr.Get("InspectorSource", "Text"), ob.Request.SourceText);
             ImGui.TextColored(Theme.TextDim, $"{ob.Request.SourceLanguage} → {ob.Request.TargetLanguage} · {ob.Request.Tone}");
             ImGui.Spacing();
-            DrawGlossaryHints(ob.Request.FixedTerms, Loc.Localize("InspectorFixedTerms", "Fixed terms sent"));
+            DrawGlossaryHints(ob.Request.FixedTerms, Tr.Get("InspectorFixedTerms", "Fixed terms sent"));
         }
         else
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("LogTranslating", "translating…"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("LogTranslating", "translating…"));
         }
     }
 
@@ -232,12 +232,12 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         ImGui.TextColored(Theme.TextDim, title);
         if (hints is null || hints.Count == 0)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorNone", "none"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorNone", "none"));
             return;
         }
         foreach (var h in hints)
         {
-            var sense = h.Targets.Count > 1 ? $"  ({Loc.Localize("InspectorModelChooses", "model chooses")})" : string.Empty;
+            var sense = h.Targets.Count > 1 ? $"  ({Tr.Get("InspectorModelChooses", "model chooses")})" : string.Empty;
             ImGui.TextColored(Theme.TermChip, h.Source);
             ImGui.SameLine();
             ImGui.TextUnformatted("→ " + string.Join(" / ", h.Targets) + sense);
@@ -256,14 +256,14 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         var hints = entry?.Outcome?.Request.Hints ?? outbound?.Request.Hints;
         if (hints is null)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorHintsOff", "No context hints were sent (off in AI / Translation settings, or not used for this request)."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorHintsOff", "No context hints were sent (off in AI / Translation settings, or not used for this request)."));
             return;
         }
 
-        Row(Loc.Localize("InspectorInCombat", "In combat"), hints.InCombat switch { true => "yes", false => "no", null => "—" });
-        Row(Loc.Localize("InspectorLocation", "Location"), hints.Location ?? "—");
-        Row(Loc.Localize("InspectorPartyJobs", "Party jobs"), hints.PartyJobs is { Count: > 0 } jobs ? string.Join(", ", jobs) : "—");
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("InspectorRecent", "Recent lines"));
+        Row(Tr.Get("InspectorInCombat", "In combat"), hints.InCombat switch { true => "yes", false => "no", null => "—" });
+        Row(Tr.Get("InspectorLocation", "Location"), hints.Location ?? "—");
+        Row(Tr.Get("InspectorPartyJobs", "Party jobs"), hints.PartyJobs is { Count: > 0 } jobs ? string.Join(", ", jobs) : "—");
+        ImGui.TextColored(Theme.TextDim, Tr.Get("InspectorRecent", "Recent lines"));
         if (hints.RecentLines is not { Count: > 0 } lines)
             ImGui.TextColored(Theme.TextMuted, "—");
         else
@@ -279,28 +279,28 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 
         if (entry?.Outcome is { } o)
         {
-            Row(Loc.Localize("InspectorResult", "Result"), KindLabel(o.Kind));
-            if (!string.IsNullOrEmpty(o.DetectedLanguage)) Row(Loc.Localize("InspectorDetected", "Detected language"), o.DetectedLanguage);
+            Row(Tr.Get("InspectorResult", "Result"), KindLabel(o.Kind));
+            if (!string.IsNullOrEmpty(o.DetectedLanguage)) Row(Tr.Get("InspectorDetected", "Detected language"), o.DetectedLanguage);
         }
 
         if (v is null)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorNoValidation", "No response was validated (the call failed or the result came from somewhere else)."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorNoValidation", "No response was validated (the call failed or the result came from somewhere else)."));
         }
         else
         {
-            Check(Loc.Localize("InspectorSchema", "JSON schema"), v.SchemaOk, v.SchemaError);
-            Check(Loc.Localize("InspectorRefusal", "No refusal / explanation"), !v.RefusalDetected, null);
-            Check(Loc.Localize("InspectorLength", "Length plausible"), !v.TooLong, null);
-            Check(Loc.Localize("InspectorPlaceholders", "Placeholders kept"), v.PlaceholdersPreserved && v.UnknownPlaceholders.Count == 0,
+            Check(Tr.Get("InspectorSchema", "JSON schema"), v.SchemaOk, v.SchemaError);
+            Check(Tr.Get("InspectorRefusal", "No refusal / explanation"), !v.RefusalDetected, null);
+            Check(Tr.Get("InspectorLength", "Length plausible"), !v.TooLong, null);
+            Check(Tr.Get("InspectorPlaceholders", "Placeholders kept"), v.PlaceholdersPreserved && v.UnknownPlaceholders.Count == 0,
                   string.Join(" ", v.MissingPlaceholders.Select(p => "-" + p).Concat(v.UnknownPlaceholders.Select(p => "+" + p))));
-            Row(Loc.Localize("InspectorUnresolved", "Unresolved spans"), v.UnresolvedCount.ToString());
+            Row(Tr.Get("InspectorUnresolved", "Unresolved spans"), v.UnresolvedCount.ToString());
         }
 
         if (failure is not null)
         {
             ImGui.Spacing();
-            ImGui.TextColored(Theme.Warn, Loc.Localize("InspectorWhyFallback", "Why the original is shown:"));
+            ImGui.TextColored(Theme.Warn, Tr.Get("InspectorWhyFallback", "Why the original is shown:"));
             ImGui.TextWrapped(failure);
         }
 
@@ -308,7 +308,7 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         if (terms is { Count: > 0 })
         {
             ImGui.Spacing();
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("InspectorTerms", "Terms reported by the model"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("InspectorTerms", "Terms reported by the model"));
             foreach (var t in terms)
             {
                 var conf = t.Conf is { } c ? $" {c * 100:0}%" : string.Empty;
@@ -328,11 +328,11 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         var userPrompt   = entry?.Outcome?.UserPrompt ?? outbound?.UserPrompt ?? string.Empty;
 
         if (entry?.Outcome is { FromCache: true })
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorFromCache", "Served from the cache; the attempts below are from the original call."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorFromCache", "Served from the cache; the attempts below are from the original call."));
 
         if (attempts.Count == 0)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("InspectorNoAttempts", "No model call was made."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("InspectorNoAttempts", "No model call was made."));
         }
         else
         {
@@ -348,16 +348,16 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 
             var a = attempts[selectedAttempt];
             var tokens = a.PromptTokens is null && a.CompletionTokens is null ? "—" : $"{a.PromptTokens?.ToString() ?? "?"} → {a.CompletionTokens?.ToString() ?? "?"}";
-            Row(Loc.Localize("InspectorModel", "Model"), a.Model);
-            Row(Loc.Localize("InspectorTokens", "Tokens (in → out)"), tokens);
-            Row(Loc.Localize("InspectorElapsed", "Elapsed"), $"{a.Elapsed.TotalSeconds:0.00}s");
-            Row(Loc.Localize("InspectorJsonMode", "JSON mode"), a.JsonModeUsed ? "response_format" : Loc.Localize("InspectorPromptOnly", "prompt only"));
+            Row(Tr.Get("InspectorModel", "Model"), a.Model);
+            Row(Tr.Get("InspectorTokens", "Tokens (in → out)"), tokens);
+            Row(Tr.Get("InspectorElapsed", "Elapsed"), $"{a.Elapsed.TotalSeconds:0.00}s");
+            Row(Tr.Get("InspectorJsonMode", "JSON mode"), a.JsonModeUsed ? "response_format" : Tr.Get("InspectorPromptOnly", "prompt only"));
             if (a.Error is { } error)
                 ImGui.TextColored(Theme.Warn, SecretRedactor.Redact(error, secrets));
             ReadOnlyBlock("##raw", SecretRedactor.Redact(PrettyJson(a.RawContent), secrets), 120);
         }
 
-        if (ImGui.CollapsingHeader(Loc.Localize("InspectorPrompts", "Prompts") + "##prompts"))
+        if (ImGui.CollapsingHeader(Tr.Get("InspectorPrompts", "Prompts") + "##prompts"))
         {
             ImGui.TextColored(Theme.TextDim, "system");
             ReadOnlyBlock("##system", SecretRedactor.Redact(systemPrompt, secrets), 100);
@@ -370,10 +370,10 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 
     private static string KindLabel(InboundOutcomeKind kind) => kind switch
     {
-        InboundOutcomeKind.Translated => Loc.Localize("KindTranslated", "translated"),
-        InboundOutcomeKind.Partial    => Loc.Localize("LogPartial", "partly unresolved"),
-        InboundOutcomeKind.Skipped    => Loc.Localize("LogSkipped", "skipped"),
-        _                             => Loc.Localize("LogOriginal", "original"),
+        InboundOutcomeKind.Translated => Tr.Get("KindTranslated", "translated"),
+        InboundOutcomeKind.Partial    => Tr.Get("LogPartial", "partly unresolved"),
+        InboundOutcomeKind.Skipped    => Tr.Get("LogSkipped", "skipped"),
+        _                             => Tr.Get("LogOriginal", "original"),
     };
 
     private static void Row(string label, string value)
@@ -430,7 +430,7 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 
     private void DrawAddToDictionaryPopup()
     {
-        var popupId = Loc.Localize("AddDictTitle", "Add to my dictionary") + "##inspectoradd";
+        var popupId = Tr.Get("AddDictTitle", "Add to my dictionary") + "##inspectoradd";
         if (openAddPopup)
         {
             ImGui.OpenPopup(popupId);
@@ -440,23 +440,23 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 
         ImGui.TextUnformatted(addSurface);
         ImGui.SetNextItemWidth(320);
-        ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
+        ImGui.InputTextWithHint("##meaning", Tr.Get("AddDictMeaning", "Meaning"), ref addMeaning, 200);
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
         var disabled2 = !canSave;
         if (disabled2) ImGui.BeginDisabled();
-        if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
+        if (ImGui.Button(Tr.Get("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
         if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("AddDictCancel", "Cancel")))
+        if (ImGui.Button(Tr.Get("AddDictCancel", "Cancel")))
             ImGui.CloseCurrentPopup();
         ImGui.EndPopup();
     }
 
-    private static string Title() => Loc.Localize("InspectorTitle", "AetherGlot — Inspector") + "###AetherGlotInspector";
+    private static string Title() => Tr.Get("InspectorTitle", "AetherGlot — Inspector") + "###AetherGlotInspector";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

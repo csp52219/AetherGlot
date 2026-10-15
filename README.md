@@ -81,8 +81,9 @@ workflow runs the unit tests first and compiles against the current Dalamud rele
 | Choose where translations appear | Display tab: presets or the channel × destination table |
 | Skip own messages | On by default — uncheck *Skip my own messages* to translate your own chat too |
 
-In the game chat a translation appears below the original with a prefix (default `[AG] ↳`), or in
-Echo. Parts that could not be translated are kept in the original language and marked like
+In the game chat a translation appears in Echo as `[AG] → Name: translation` (or, if you choose,
+in the original channel with the sender's name). Auto-translate phrases keep the game's own look.
+These lines are only shown on your screen; nothing is sent to other players. Parts that could not be translated are kept in the original language and marked like
 `‹zorp strat›`. When a response is discarded (invalid / refusal), nothing is printed: the original
 message is already in the chat log.
 
@@ -205,8 +206,12 @@ receives everything. Speakers are matched to party list rows by name, including 
 name display styles (`K. Rhyne`, `Kaela R.`, `K. R.`). Alliance members outside your own party
 are not in the party list, so they get no bubble.
 
-**Game chat**: the translation is printed below the original in the same channel (or in Echo),
-with a prefix (default `[AG] ↳`). *Replace the original* rewrites the original line instead, but
+**Game chat**: the translation is printed in Echo (default) or in the original channel, with a
+prefix (default `[AG] →`; use characters the game font has: "↳", for example, shows as "=").
+In the original channel the sender's name is set on the line so it does not read as a nameless
+message; Echo is the default because such a line still looks like a real message of that channel.
+Auto-translate phrases are printed as the game's own auto-translate payloads.
+Lines are only printed locally. *Replace the original* rewrites the original line instead, but
 only when the translation is already cached (the line has to be changed before it is shown);
 otherwise the translation is added as a new line.
 
@@ -272,6 +277,21 @@ Commands: `/aetherglot reload` reloads all dictionaries (and downloads the commu
 
 ---
 
+## Troubleshooting
+
+- **dalamud.log** (open with `/xllog`) always gets: a start-up summary (version, connection mode
+  and host, models, channels, display preset), connection test results, sends, saves, warnings and
+  errors. Keys, secrets and full URLs with credentials are never written.
+- **Detailed log** (Settings → General → Troubleshooting): also writes, for every message, where it
+  was routed and how the translation ended (model, time, cache, why the original was shown).
+  Message text and player names are written only if you also tick *Also write message text and
+  names*; otherwise only lengths and initials are logged.
+- **Copy diagnostics** puts a summary (settings without secrets, display routes, dictionary
+  counts, last connection test, recent warnings / errors) on the clipboard for bug reports.
+- **A translation is missing from the translation log?** The log footer says how many entries the
+  filter hides and which channels are routed only to bubbles / game chat (with a button to the
+  Display settings).
+
 ## Security
 
 - API keys, the LiteLLM virtual key, the Cloudflare Access Client ID / Secret and extra header values are stored in **Windows Credential Manager** (targets `AetherGlot:*`), never in `Configuration.json`.
@@ -319,6 +339,9 @@ Settings files from older versions are upgraded automatically on first start:
 - **v2 → v3:** the old default outbound prompt (which forced a very casual style) is cleared,
   because the tone is now chosen in the send preview; a prompt you edited is kept as extra style
   instructions. The unused *always translate* option is removed.
+- **v3 → v4:** game chat output switches to Echo once (choose *Original channel* again in
+  Settings → Display if you prefer it), and the old `[AG] ↳` prefix becomes `[AG] →`; a prefix you
+  changed is kept.
 
 ---
 

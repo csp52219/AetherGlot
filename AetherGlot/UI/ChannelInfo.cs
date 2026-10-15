@@ -24,16 +24,16 @@ internal static class ChannelInfo
 
     public static string GroupLabel(ChannelGroup g) => g switch
     {
-        ChannelGroup.Party               => Loc.Localize("ChParty", "Party"),
-        ChannelGroup.Alliance            => Loc.Localize("ChAlliance", "Alliance"),
-        ChannelGroup.Say                 => Loc.Localize("ChSay", "Say"),
-        ChannelGroup.Shout               => Loc.Localize("ChShout", "Shout"),
-        ChannelGroup.Yell                => Loc.Localize("ChYell", "Yell"),
-        ChannelGroup.FreeCompany         => Loc.Localize("ChFc", "FC"),
-        ChannelGroup.Linkshell           => Loc.Localize("ChLs", "LS 1–8"),
-        ChannelGroup.CrossWorldLinkshell => Loc.Localize("ChCwls", "CWLS 1–8"),
-        ChannelGroup.Tell                => Loc.Localize("ChTell", "Tell"),
-        ChannelGroup.NoviceNetwork       => Loc.Localize("ChNn", "Novice Network"),
+        ChannelGroup.Party               => Tr.Get("ChParty", "Party"),
+        ChannelGroup.Alliance            => Tr.Get("ChAlliance", "Alliance"),
+        ChannelGroup.Say                 => Tr.Get("ChSay", "Say"),
+        ChannelGroup.Shout               => Tr.Get("ChShout", "Shout"),
+        ChannelGroup.Yell                => Tr.Get("ChYell", "Yell"),
+        ChannelGroup.FreeCompany         => Tr.Get("ChFc", "FC"),
+        ChannelGroup.Linkshell           => Tr.Get("ChLs", "LS 1–8"),
+        ChannelGroup.CrossWorldLinkshell => Tr.Get("ChCwls", "CWLS 1–8"),
+        ChannelGroup.Tell                => Tr.Get("ChTell", "Tell"),
+        ChannelGroup.NoviceNetwork       => Tr.Get("ChNn", "Novice Network"),
         _                                => g.ToString(),
     };
 

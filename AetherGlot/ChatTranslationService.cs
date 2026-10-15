@@ -12,8 +12,6 @@ internal sealed class ChatTranslationService
 {
     // Prefix of the old Echo output; still ignored so old lines are never re-translated
     private const string LegacyEchoPrefix = "[AetherGlot]";
-    private const string UnresolvedOpen  = "‹";
-    private const string UnresolvedClose = "›";
 
     private readonly Configuration config;
     private readonly ITranslationPipeline pipeline;
@@ -30,7 +28,7 @@ internal sealed class ChatTranslationService
     private readonly GlossaryManager glossary;
     private readonly TranslationLog translationLog;
     private readonly BubbleBoard bubbles;
-    private readonly IPluginLog log;
+    private readonly DiagnosticLog log;
 
     // Lines we printed ourselves; ignored when they come back through ChatMessage
     private readonly ConcurrentDictionary<string, DateTime> printedLines = new(StringComparer.Ordinal);
@@ -45,6 +43,9 @@ internal sealed class ChatTranslationService
 
     // Avoid flooding the log when the connection is not configured
     private DateTime lastConfigWarning = DateTime.MinValue;
+
+    // One warning per minute while the connection keeps failing; the rest goes to the trace
+    private DateTime lastHttpWarning = DateTime.MinValue;
 
     public ChatTranslationService(
         Configuration config,
@@ -62,7 +63,7 @@ internal sealed class ChatTranslationService
         GlossaryManager glossary,
         TranslationLog translationLog,
         BubbleBoard bubbles,
-        IPluginLog log)
+        DiagnosticLog log)
     {
         this.config      = config;
         this.pipeline    = pipeline;
@@ -119,7 +120,7 @@ internal sealed class ChatTranslationService
         }
         catch (Exception ex)
         {
-            log.Debug("[AetherGlot] Could not split the message into parts ({Type}); using plain text.", ex.GetType().Name);
+            log.Trace($"Could not split the message into parts ({ex.GetType().Name}); using plain text.");
             message = Placeholderizer.Build([new TextPart(raw)]);
         }
 
@@ -131,7 +132,14 @@ internal sealed class ChatTranslationService
         var inCombat  = condition[ConditionFlag.InCombat];
         var mentions  = MentionDetectorForPlayer().Matches(message.DisplayOriginal);
         var destinations = config.Display.Resolve(group, inCombat, mentions);
-        if (destinations == Destinations.None) return;
+        if (destinations == Destinations.None)
+        {
+            log.Trace($"Inbound {channel} from {log.Who(senderName)}: not shown ({(inCombat ? "in combat" : "no destination")} for {group}).");
+            return;
+        }
+        log.Trace($"Inbound {channel} from {log.Who(senderName)} {log.Text(message.DisplayOriginal)} → {destinations}.");
+        if (!destinations.HasFlag(Destinations.Log))
+            translationLog.RecordNotLogged(group, destinations);
 
         var partyJobs = CapturePartyJobs();
         var hints     = config.Translation.SendContextHints ? CaptureHints(channel, inCombat, partyJobs) : null;
@@ -157,14 +165,15 @@ internal sealed class ChatTranslationService
         try
         {
             var request = new InboundRequest(message.Text, message.AutoTranslateTexts, langName, langCode);
-            if (!pipeline.TryGetCachedInbound(request, connection(), out var cached) || FormatForGameChat(cached) is not { } line)
+            if (!pipeline.TryGetCachedInbound(request, connection(), out var cached) || GameChatPieces(cached, message) is not { } pieces)
                 return false;
-            chatMessage.Message = new SeString(new TextPayload(line));
+            chatMessage.Message = ToSeString(string.Empty, pieces);
+            log.Trace("Replaced the original line with the cached translation.");
             return true;
         }
         catch (Exception ex)
         {
-            log.Debug("[AetherGlot] Could not replace the original line ({Type}).", ex.GetType().Name);
+            log.Trace($"Could not replace the original line ({ex.GetType().Name}).");
             return false;
         }
     }
@@ -177,22 +186,47 @@ internal sealed class ChatTranslationService
         return false;
     }
 
-    /// <summary>Prints a translation to the original channel or Echo (framework thread).</summary>
-    private void PrintToGameChat(XivChatType channel, string sender, string line)
+    /// <summary>
+    /// Prints a translation (framework thread). Echo: "[AG] → Name: text". Original channel: the
+    /// sender is set as the line's name so it does not read as a nameless message of that channel.
+    /// The line is only shown locally; nothing is sent to the server.
+    /// </summary>
+    private void PrintToGameChat(XivChatType channel, string sender, IReadOnlyList<GameChatPiece> pieces)
     {
         var settings = config.Display.GameChat;
         var prefix   = string.IsNullOrWhiteSpace(settings.Prefix) ? string.Empty : settings.Prefix.Trim() + " ";
+        var echo     = settings.Output == GameChatOutput.Echo;
 
-        // Below the original line the sender is obvious; in Echo it is not
-        var text = settings.Output == GameChatOutput.Echo ? $"{prefix}{sender}: {line}" : $"{prefix}{line}";
-        var type = settings.Output == GameChatOutput.Echo ? XivChatType.Echo : channel;
+        var message = ToSeString(echo ? $"{prefix}{sender}: " : prefix, pieces);
+        var entry   = new XivChatEntry { Type = echo ? XivChatType.Echo : channel, Message = message };
+        if (!echo) entry.Name = new SeString(new TextPayload(sender));
 
         var now = DateTime.UtcNow;
         foreach (var (k, v) in printedLines)
             if (now - v > PrintedLineTtl) printedLines.TryRemove(k, out _);
-        printedLines[text] = now;
+        printedLines[message.TextValue] = now;
 
-        chatGui.Print(new XivChatEntry { Type = type, Message = new SeString(new TextPayload(text)) });
+        chatGui.Print(entry);
+    }
+
+    /// <summary>Text plus auto-translate phrases as real payloads (shown like the game's own).</summary>
+    private static SeString ToSeString(string lead, IEnumerable<GameChatPiece> pieces)
+    {
+        var b = new SeStringBuilder();
+        if (lead.Length > 0) b.AddText(lead);
+        foreach (var piece in pieces)
+        {
+            switch (piece)
+            {
+                case GameChatTextPiece t:
+                    b.AddText(t.Text);
+                    break;
+                case GameChatAutoTranslatePiece a:
+                    b.Add(new AutoTranslatePayload(a.Group, a.Key));
+                    break;
+            }
+        }
+        return b.Build();
     }
 
     private async Task TranslateInboundAsync(
@@ -209,7 +243,7 @@ internal sealed class ChatTranslationService
                 if (DateTime.UtcNow - lastConfigWarning > TimeSpan.FromMinutes(5))
                 {
                     lastConfigWarning = DateTime.UtcNow;
-                    log.Warning("[AetherGlot] Translation skipped: {Reason}", missing);
+                    log.Warning($"Translation skipped: {missing}");
                 }
                 return;
             }
@@ -229,19 +263,27 @@ internal sealed class ChatTranslationService
             if (outcome.Kind == InboundOutcomeKind.Partial)
                 glossary.RecordUnresolved(outcome);
 
-            if (outcome.Kind == InboundOutcomeKind.Fallback)
-                log.Debug("[AetherGlot] Translation discarded: {Reason}", outcome.FailureReason ?? "unknown");
+            var timing = outcome.FromCache ? "cache" : $"{outcome.TotalElapsed.TotalMilliseconds:0} ms, {outcome.Model}";
+            if (outcome.HttpFailure is { } http && DateTime.UtcNow - lastHttpWarning > TimeSpan.FromMinutes(1))
+            {
+                lastHttpWarning = DateTime.UtcNow;
+                log.Warning($"Translation failed ({http}): {outcome.FailureReason ?? "unknown"}");
+            }
+            else if (outcome.Kind == InboundOutcomeKind.Fallback)
+                log.Trace($"Translation discarded, original shown ({timing}): {outcome.FailureReason ?? "unknown"}");
+            else
+                log.Trace($"Inbound {channel} → {outcome.Kind} ({timing}) {log.Text(outcome.DisplayText)}");
 
             if (destinations.HasFlag(Destinations.Bubble) && BubbleSegments(outcome) is { } segments)
                 bubbles.Add(senderName, segments, DateTimeOffset.Now, BubbleNote(outcome));
 
-            if (destinations.HasFlag(Destinations.GameChat) && FormatForGameChat(outcome) is { } line)
-                await framework.RunOnFrameworkThread(() => PrintToGameChat(channel, senderName, line)).ConfigureAwait(false);
+            if (destinations.HasFlag(Destinations.GameChat) && GameChatPieces(outcome, message) is { } pieces)
+                await framework.RunOnFrameworkThread(() => PrintToGameChat(channel, senderName, pieces)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             // Pipeline errors are already turned into fallbacks; this is a last resort
-            log.Error("[AetherGlot] Inbound translation failed ({Type}).", ex.GetType().Name);
+            log.Error($"Inbound translation failed ({ex.GetType().Name}).");
         }
         finally
         {
@@ -251,25 +293,16 @@ internal sealed class ChatTranslationService
     }
 
     /// <summary>
-    /// Text for the game chat, or null when nothing should be printed. The original message is
-    /// already in the chat log, so fallbacks and skips print nothing here.
+    /// The game chat version of a translation, or null when nothing should be printed. The original
+    /// message is already in the chat log, so fallbacks and skips print nothing here.
     /// </summary>
-    private string? FormatForGameChat(InboundOutcome outcome)
+    private IReadOnlyList<GameChatPiece>? GameChatPieces(InboundOutcome outcome, PlaceholderizedMessage message) => outcome.Kind switch
     {
-        switch (outcome.Kind)
-        {
-            case InboundOutcomeKind.Translated:
-                return outcome.DisplayText;
-
-            case InboundOutcomeKind.Partial when config.Translation.UnresolvedMode == UnresolvedDisplayMode.PartialMarked:
-                return string.Concat(outcome.Segments.Select(s =>
-                    s.Kind == SegmentKind.Unresolved ? UnresolvedOpen + s.Text + UnresolvedClose : s.Text));
-
-            default:
-                // Partial with OriginalOnly/Hide, Skipped, Fallback
-                return null;
-        }
-    }
+        InboundOutcomeKind.Translated => GameChatLine.Build(outcome.Segments, message.AutoTranslateParts, markUnresolved: false),
+        InboundOutcomeKind.Partial when config.Translation.UnresolvedMode == UnresolvedDisplayMode.PartialMarked
+            => GameChatLine.Build(outcome.Segments, message.AutoTranslateParts, markUnresolved: true),
+        _ => null, // Partial with OriginalOnly / Hide, Skipped, Fallback
+    };
 
     private TranslationHints CaptureHints(XivChatType channel, bool inCombat, IReadOnlyList<string> jobs)
     {
@@ -281,7 +314,7 @@ internal sealed class ChatTranslationService
         }
         catch (Exception ex)
         {
-            log.Debug("[AetherGlot] Could not resolve territory name ({Type}).", ex.GetType().Name);
+            log.Trace($"Could not resolve territory name ({ex.GetType().Name}).");
         }
 
         var recent = recentLines.TryGetValue(channel, out var q) ? q.ToList() : [];

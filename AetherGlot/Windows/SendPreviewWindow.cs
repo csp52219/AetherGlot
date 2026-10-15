@@ -132,7 +132,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         ImGui.Separator();
 
         // ── Input ───────────────────────────────────────────────────────
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("SendPreviewOriginal", "Your message"));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("SendPreviewOriginal", "Your message"));
         if (focusInput)
         {
             ImGui.SetKeyboardFocusHere();
@@ -142,7 +142,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
             ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine);
         if (ImGui.IsItemEdited())
             editedAt = DateTime.UtcNow;
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("SendPreviewInputHint", "Enter: send the translation · Ctrl+Enter: new line"));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("SendPreviewInputHint", "Enter: send the translation · Ctrl+Enter: new line"));
 
         // Translate once typing pauses
         var s = state;
@@ -165,7 +165,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
 
     private void DrawToolbar()
     {
-        ImGui.TextUnformatted(Loc.Localize("SendPreviewChannel", "Channel"));
+        ImGui.TextUnformatted(Tr.Get("SendPreviewChannel", "Channel"));
         ImGui.SameLine();
         ImGui.SetNextItemWidth(150);
         var currentLabel = SendableChannels.FirstOrDefault(c => c.Type == selectedChannel).Label ?? selectedChannel.ToString();
@@ -192,7 +192,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         {
             var selected = config.OutboundTone == tone;
             if (selected) ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent with { W = 0.45f });
-            if (ImGui.SmallButton(Loc.Localize(locKey, fallback)) && !selected)
+            if (ImGui.SmallButton(Tr.Get(locKey, fallback)) && !selected)
             {
                 config.OutboundTone = tone;
                 config.Save();
@@ -209,12 +209,12 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
     private void DrawOutput(PreviewState s)
     {
         var stale = s.For is not null && s.For != CurrentKey();
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("SendPreviewTranslation", "Translation"));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("SendPreviewTranslation", "Translation"));
         ImGui.SameLine();
         if (s.Translating)
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("SendPreviewTranslating", "translating…"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("SendPreviewTranslating", "translating…"));
         else if (stale || editedAt is not null)
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("SendPreviewOutdated", "(waiting for you to stop typing)"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("SendPreviewOutdated", "(waiting for you to stop typing)"));
         else
             ImGui.TextUnformatted(string.Empty);
 
@@ -224,7 +224,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         ImGui.SameLine(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(counter).X));
         ImGui.TextColored(bytes > ChatText.MaxBytes ? Theme.Error : Theme.TextMuted, counter);
         if (bytes > ChatText.MaxBytes && ImGui.IsItemHovered())
-            ImGui.SetTooltip(Loc.Localize("SendPreviewTooLong", "Longer than the chat allows; the end will be cut."));
+            ImGui.SetTooltip(Tr.Get("SendPreviewTooLong", "Longer than the chat allows; the end will be cut."));
 
         ImGui.InputTextMultiline("##output", ref output, InputBufferBytes, new Vector2(-1, 56), ImGuiInputTextFlags.CtrlEnterForNewLine);
 
@@ -239,7 +239,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
 
         if (!string.IsNullOrWhiteSpace(o.Response?.BackTranslation))
         {
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("SendPreviewBack", "Back-translation:"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("SendPreviewBack", "Back-translation:"));
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Text, Theme.TextDim);
             ImGui.TextWrapped(o.Response!.BackTranslation!);
@@ -249,7 +249,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         var alternatives = o.Response?.Alternatives.Where(a => !string.IsNullOrWhiteSpace(a)).Take(2).ToList() ?? [];
         if (alternatives.Count > 0)
         {
-            ImGui.TextColored(Theme.TextDim, Loc.Localize("SendPreviewAlternatives", "Alternatives (click to use):"));
+            ImGui.TextColored(Theme.TextDim, Tr.Get("SendPreviewAlternatives", "Alternatives (click to use):"));
             var candidates = new List<string> { o.Translation };
             candidates.AddRange(alternatives);
             for (var i = 0; i < candidates.Count; i++)
@@ -291,7 +291,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
             if (!first) RichText.SameLineIfFits(text);
             RichText.Chip(text, isFixed ? Theme.TermChip : Theme.TextDim, isFixed ? Theme.TermChipBg : Theme.ChipBg);
             if (isFixed && ImGui.IsItemHovered())
-                ImGui.SetTooltip(Loc.Localize("SendPreviewFixedTerm", "Fixed: official in-game name"));
+                ImGui.SetTooltip(Tr.Get("SendPreviewFixedTerm", "Fixed: official in-game name"));
             first = false;
         }
     }
@@ -303,7 +303,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         var current = s.For == CurrentKey() && !s.Translating && editedAt is null;
         var canSend = current && !string.IsNullOrWhiteSpace(output);
 
-        if (ImGui.Button(Loc.Localize("SendPreviewCancelBtn", "Cancel")))
+        if (ImGui.Button(Tr.Get("SendPreviewCancelBtn", "Cancel")))
         {
             cts?.Cancel();
             IsOpen = false;
@@ -312,7 +312,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         var canSendOriginal = !string.IsNullOrWhiteSpace(input);
         var disabled1 = !canSendOriginal;
         if (disabled1) ImGui.BeginDisabled();
-        if (ImGui.Button(Loc.Localize("SendPreviewSendOriginalBtn", "Send original")))
+        if (ImGui.Button(Tr.Get("SendPreviewSendOriginalBtn", "Send original")))
             Send(input);
         if (disabled1) ImGui.EndDisabled();
 
@@ -321,7 +321,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         if (disabled2) ImGui.BeginDisabled();
         ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent);
         ImGui.PushStyleColor(ImGuiCol.Text, Theme.AccentText);
-        var sendClicked = ImGui.Button(Loc.Localize("SendPreviewSendBtn", "Send translation (Enter)"));
+        var sendClicked = ImGui.Button(Tr.Get("SendPreviewSendBtn", "Send translation (Enter)"));
         ImGui.PopStyleColor(2);
         if (disabled2) ImGui.EndDisabled();
 
@@ -344,11 +344,11 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         if (s.Outcome is { } outcome)
         {
             ImGui.SameLine();
-            if (ImGui.SmallButton(Loc.Localize("SendPreviewInspect", "Inspect")))
+            if (ImGui.SmallButton(Tr.Get("SendPreviewInspect", "Inspect")))
                 inspect(outcome);
         }
 
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("SendPreviewNote", "Action and job names are fixed to the game data's official name."));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("SendPreviewNote", "Action and job names are fixed to the game data's official name."));
     }
 
     private void Send(string text)
@@ -421,7 +421,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
                 if (localCts.IsCancellationRequested) return;
                 state = outcome.Success
                     ? new PreviewState(key, false, outcome, null)
-                    : new PreviewState(key, false, outcome, outcome.FailureReason ?? Loc.Localize("SendPreviewFailed", "Translation failed."));
+                    : new PreviewState(key, false, outcome, outcome.FailureReason ?? Tr.Get("SendPreviewFailed", "Translation failed."));
             }
             catch (OperationCanceledException)
             {
@@ -446,7 +446,7 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         _    => code,
     };
 
-    private static string Title() => Loc.Localize("SendPreviewTitle", "AetherGlot — Send Preview") + "###AetherGlotSend";
+    private static string Title() => Tr.Get("SendPreviewTitle", "AetherGlot — Send Preview") + "###AetherGlotSend";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

@@ -239,6 +239,14 @@
     "Message": "キーとシークレットは設定ファイルではなく Windows 資格情報マネージャーに保存されます。",
     "Description": ""
   },
+  "SaveFailed": {
+    "Message": "! 保存できませんでした：{0}（詳細は dalamud.log）",
+    "Description": ""
+  },
+  "SaveDone": {
+    "Message": "✓ 保存しました（{0:HH:mm:ss}）",
+    "Description": ""
+  },
   "SaveBtn": {
     "Message": "保存",
     "Description": ""
@@ -297,6 +305,34 @@
   },
   "HelpSend": {
     "Message": "翻訳して送信",
+    "Description": ""
+  },
+  "DiagSection": {
+    "Message": "トラブルシューティング",
+    "Description": ""
+  },
+  "DiagWhere": {
+    "Message": "起動・送信・保存・警告・エラーは常に dalamud.log に記録されます（/xllog で開けます）。",
+    "Description": ""
+  },
+  "DiagVerbose": {
+    "Message": "詳細ログ：メッセージごとの表示先と翻訳結果を記録する",
+    "Description": ""
+  },
+  "DiagText": {
+    "Message": "本文と名前も記録する（他のプレイヤーの発言です）",
+    "Description": ""
+  },
+  "DiagCopy": {
+    "Message": "診断情報をコピー",
+    "Description": ""
+  },
+  "DiagCopied": {
+    "Message": "✓ コピーしました。不具合の報告にそのまま貼れます（キーやシークレットは含みません）。",
+    "Description": ""
+  },
+  "DiagCopyHint": {
+    "Message": "設定の要約・直近の接続テスト・最近のエラーをまとめます。キーやシークレットは含みません。",
     "Description": ""
   },
   "ModeLabel": {
@@ -641,6 +677,10 @@
   },
   "ShowBtn": {
     "Message": "表示",
+    "Description": ""
+  },
+  "SaveSettingsFile": {
+    "Message": "設定ファイル",
     "Description": ""
   },
   "ConfigWindowTitle": {
@@ -1333,6 +1373,26 @@
   },
   "SendTonePolite": {
     "Message": "丁寧",
+    "Description": ""
+  },
+  "LogHiddenByFilter": {
+    "Message": "絞り込みで {0} 件非表示",
+    "Description": ""
+  },
+  "LogShowAll": {
+    "Message": "すべて表示",
+    "Description": ""
+  },
+  "LogNotLogged": {
+    "Message": "このログに出していない分：{0}",
+    "Description": ""
+  },
+  "LogNotLoggedTip": {
+    "Message": "これらのチャンネルは翻訳ログ以外に表示する設定です。設定 → 表示 で変更できます。",
+    "Description": ""
+  },
+  "LogOpenDisplay": {
+    "Message": "表示設定",
     "Description": ""
   },
   "LogShowOriginal": {

@@ -137,8 +137,24 @@ public enum GameChatOutput
 [Serializable]
 public sealed class GameChatSettings
 {
-    public GameChatOutput Output { get; set; } = GameChatOutput.OriginalChannel;
-    public string Prefix { get; set; } = "[AG] ↳";
+    /// <summary>"→" is in the game's chat font (the earlier "↳" was shown as "=").</summary>
+    public const string DefaultPrefix = "[AG] →";
+    public const string LegacyPrefix  = "[AG] ↳";
+
+    /// <summary>Echo by default: a line printed into Say / Party looks like a real message of that channel.</summary>
+    public GameChatOutput Output { get; set; } = GameChatOutput.Echo;
+    public string Prefix { get; set; } = DefaultPrefix;
+
+    /// <summary>
+    /// v4 migration: output goes to Echo (the old default printed nameless lines into the
+    /// original channel), and the old "↳" prefix, which the game font cannot show, is replaced.
+    /// A prefix the user changed is kept.
+    /// </summary>
+    public void MigrateToV4()
+    {
+        Output = GameChatOutput.Echo;
+        if (string.Equals(Prefix?.Trim(), LegacyPrefix, StringComparison.Ordinal)) Prefix = DefaultPrefix;
+    }
 
     /// <summary>Replace the original line with the translation (only possible for cached translations).</summary>
     public bool ReplaceOriginal { get; set; }

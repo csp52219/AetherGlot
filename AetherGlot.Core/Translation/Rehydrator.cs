@@ -15,8 +15,11 @@ public enum SegmentKind
     Original,
 }
 
-/// <summary>A piece of displayable text. <see cref="Guess"/> is set for unresolved spans.</summary>
-public sealed record DisplaySegment(string Text, SegmentKind Kind, string? Guess = null);
+/// <summary>
+/// A piece of displayable text. <see cref="Guess"/> is set for unresolved spans;
+/// <see cref="PlaceholderId"/> ("at0", ...) for auto-translate phrases.
+/// </summary>
+public sealed record DisplaySegment(string Text, SegmentKind Kind, string? Guess = null, string? PlaceholderId = null);
 
 /// <summary>Turns placeholder text back into display segments.</summary>
 public static class Rehydrator
@@ -35,7 +38,7 @@ public static class Rehydrator
         return Split(translation, SegmentKind.Translated, id =>
         {
             if (Placeholders.IsAutoTranslate(id) && autoTranslateTexts.TryGetValue(id, out var at))
-                return new DisplaySegment(at, SegmentKind.AutoTranslate);
+                return new DisplaySegment(at, SegmentKind.AutoTranslate, PlaceholderId: id);
             if (byId.TryGetValue(id, out var u))
                 return new DisplaySegment(u.Text, SegmentKind.Unresolved, u.Guess);
             return null;
@@ -47,7 +50,7 @@ public static class Rehydrator
         string placeholderizedSource,
         IReadOnlyDictionary<string, string> autoTranslateTexts) =>
         Split(placeholderizedSource, SegmentKind.Original, id =>
-            autoTranslateTexts.TryGetValue(id, out var at) ? new DisplaySegment(at, SegmentKind.AutoTranslate) : null);
+            autoTranslateTexts.TryGetValue(id, out var at) ? new DisplaySegment(at, SegmentKind.AutoTranslate, PlaceholderId: id) : null);
 
     public static string ToPlainText(IEnumerable<DisplaySegment> segments) =>
         string.Concat(segments.Select(s => s.Text));

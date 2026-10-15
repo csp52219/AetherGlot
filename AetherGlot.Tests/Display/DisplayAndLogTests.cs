@@ -65,7 +65,8 @@ public sealed class DisplayAndLogTests
         Assert.Equal(6f, d.Bubble.Seconds);
         Assert.Equal(2, d.Bubble.MaxPerMember);
         Assert.True(d.Bubble.ExtendByLength);
-        Assert.Equal("[AG] ↳", d.GameChat.Prefix);
+        Assert.Equal(GameChatSettings.DefaultPrefix, d.GameChat.Prefix);
+        Assert.Equal(GameChatOutput.Echo, d.GameChat.Output);
         Assert.True(d.Log.OneLine && d.Log.PauseWhileScrolled && d.Log.HighlightMentions);
     }
 
@@ -124,5 +125,49 @@ public sealed class DisplayAndLogTests
                 .Concat(["Scholar", "SCH", "学者"])
                 .Concat(MentionDetector.RoleWords(4)));
         Assert.Equal(expected, detector.Matches(text));
+    }
+}
+
+public sealed class GameChatMigrationTests
+{
+    [Fact]
+    public void Defaults_UseEcho_AndAPrefixTheGameFontCanShow()
+    {
+        var g = new AetherGlot.Core.Display.GameChatSettings();
+        Assert.Equal(AetherGlot.Core.Display.GameChatOutput.Echo, g.Output);
+        Assert.DoesNotContain('↳', g.Prefix);
+    }
+
+    [Fact]
+    public void MigrateToV4_SwitchesToEcho_AndReplacesOnlyTheOldDefaultPrefix()
+    {
+        var old = new AetherGlot.Core.Display.GameChatSettings { Output = AetherGlot.Core.Display.GameChatOutput.OriginalChannel, Prefix = "[AG] ↳" };
+        old.MigrateToV4();
+        Assert.Equal(AetherGlot.Core.Display.GameChatOutput.Echo, old.Output);
+        Assert.Equal(AetherGlot.Core.Display.GameChatSettings.DefaultPrefix, old.Prefix);
+
+        var custom = new AetherGlot.Core.Display.GameChatSettings { Output = AetherGlot.Core.Display.GameChatOutput.OriginalChannel, Prefix = "»" };
+        custom.MigrateToV4();
+        Assert.Equal("»", custom.Prefix);
+    }
+}
+
+public sealed class NotLoggedTests
+{
+    [Fact]
+    public void MessagesShownOnlyElsewhere_AreCountedPerChannel()
+    {
+        var log = new TranslationLog(10);
+        log.RecordNotLogged(ChannelGroup.Say, Destinations.GameChat);
+        log.RecordNotLogged(ChannelGroup.Say, Destinations.GameChat);
+        log.RecordNotLogged(ChannelGroup.Party, Destinations.Bubble);
+
+        var counts = log.NotLogged;
+        Assert.Equal(2, counts.Count);
+        Assert.Contains(new NotLoggedCount(ChannelGroup.Say, 2, Destinations.GameChat), counts);
+        Assert.Contains(new NotLoggedCount(ChannelGroup.Party, 1, Destinations.Bubble), counts);
+
+        log.Clear();
+        Assert.Empty(log.NotLogged);
     }
 }
