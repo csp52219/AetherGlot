@@ -31,5 +31,22 @@ public sealed class TranslationConfig
     /// <summary>Max entries in the translation cache (0 disables caching).</summary>
     public int CacheSize { get; set; } = 500;
 
+    // --- Glossary ("keep terms up to date") ---
+
+    /// <summary>Load action / status / job / duty / place names and auto-translate phrases from the game data at startup.</summary>
+    public bool UseGameData { get; set; } = true;
+
+    /// <summary>Download the community dictionary at startup (otherwise the cached or bundled copy is used).</summary>
+    public bool CommunityAutoUpdate { get; set; } = true;
+
+    /// <summary>Where the community dictionary is downloaded from.</summary>
+    public string CommunityGlossaryUrl { get; set; } = DefaultCommunityGlossaryUrl;
+
+    /// <summary>Maximum glossary pairs injected into one prompt.</summary>
+    public int MaxGlossaryHits { get; set; } = 16;
+
+    public const string DefaultCommunityGlossaryUrl =
+        "https://raw.githubusercontent.com/csp52219/AetherGlot/master/community-glossary/glossary.json";
+
     public PipelineOptions ToPipelineOptions() => new(DiscardRefusals: DiscardRefusals);
 }

@@ -143,6 +143,41 @@ Identical messages are served from a size-limited cache.
 
 ---
 
+## Dictionaries
+
+Terms are looked up locally before the model is called; only the pairs that occur in the
+message are added to the prompt (never the whole dictionary).
+
+| Source | Content | Updated |
+|---|---|---|
+| **My dictionary** | Your own entries (`mydict.json` in the plugin config folder). | When you edit it |
+| **Game data** | Job, action, status, duty and place names, and every auto-translate phrase (Completion sheet and the sheets its groups point to), in Japanese and English. | Every start (follows patches automatically) |
+| **Community dictionary** | Slang, raid mechanics, abbreviations ([`community-glossary/`](community-glossary/README.md)). | Downloaded at start; cached; a copy ships with the plugin |
+
+Priority: **My dictionary > game data > community dictionary**. A community entry with several
+meanings (e.g. `bio`) overrides the single game-data term so its context rules can apply.
+
+- **Spelling variants**: case, full-width characters, hyphens, spaces and doubled words are
+  normalised, so `opo`, `Opo-opo`, `opo opo` and `opoopo` are the same term. Matching is by whole
+  words (English) or longest match (Japanese).
+- **Several meanings**: each meaning can list conditions (in combat or not, words that appear with
+  it, jobs in the party). If they decide the meaning locally, only that meaning is sent; otherwise
+  all meanings are sent and the model chooses.
+- **Auto-translate phrases** arrive as IDs, not text. They are replaced by `{{at0}}`, `{{at1}}` …
+  before the message is sent to the model, and filled back in with the game's own text in your
+  client language. A message made only of auto-translate phrases is not sent at all.
+- **Outbound**: action, job, status, duty and place names in your message are fixed to their
+  official in-game name in the target language.
+- **Unresolved words** are collected (`pending.json`) as candidates for your dictionary.
+- The community dictionary is fetched with the Cloudflare Access headers **only** when it is
+  served from the same host as your LiteLLM / OpenAI-compatible endpoint, so the service token is
+  never sent to third parties such as GitHub.
+
+Commands: `/aetherglot reload` reloads all dictionaries (and downloads the community dictionary);
+`/aetherglot lookup <text>` shows which terms and meanings would be used for a message.
+
+---
+
 ## Security
 
 - API keys, the LiteLLM virtual key, the Cloudflare Access Client ID / Secret and extra header values are stored in **Windows Credential Manager** (targets `AetherGlot:*`), never in `Configuration.json`.

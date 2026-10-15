@@ -18,6 +18,7 @@ public sealed class SendPreviewWindow : Window, IDisposable
     private readonly IChatSender              chatSender;
     private readonly Func<ConnectionSettings> connection;
     private readonly IClientState             clientState;
+    private readonly GlossaryService          glossary;
 
     /// <summary>Immutable snapshot swapped atomically by the background task.</summary>
     private sealed record PreviewState(bool Translating, OutboundOutcome? Outcome, string? Error);
@@ -61,7 +62,8 @@ public sealed class SendPreviewWindow : Window, IDisposable
         ITranslationContext context,
         IChatSender chatSender,
         Func<ConnectionSettings> connection,
-        IClientState clientState)
+        IClientState clientState,
+        GlossaryService glossary)
         : base(Loc.Localize("SendPreviewTitle", "AetherGlot — Send Preview"))
     {
         this.config      = config;
@@ -70,6 +72,7 @@ public sealed class SendPreviewWindow : Window, IDisposable
         this.chatSender  = chatSender;
         this.connection  = connection;
         this.clientState = clientState;
+        this.glossary    = glossary;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -189,13 +192,18 @@ public sealed class SendPreviewWindow : Window, IDisposable
             return;
         }
 
-        var target  = LanguageName(context.GetContextLanguage(selectedChannel.ToString(), "EN"));
+        var targetCode = context.GetContextLanguage(selectedChannel.ToString(), "EN").ToLowerInvariant();
+        var sourceCode = ChatTranslationService.LanguageCode(clientState.ClientLanguage);
+
+        // Action / job / status names use the official in-game name of the target language
+        var fixedTerms = glossary.FixedTerms(originalText, sourceCode, targetCode);
         var request = new OutboundRequest(
             originalText,
             ChatTranslationService.LanguageName(clientState.ClientLanguage),
-            target,
+            LanguageName(targetCode),
             OutboundTone.Normal,
-            config.OutboundPrompt);
+            config.OutboundPrompt,
+            fixedTerms);
 
         _ = Task.Run(async () =>
         {

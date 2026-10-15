@@ -48,6 +48,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ICondition              Condition       { get; private set; } = null!;
     [PluginService] internal static IPartyList              PartyList       { get; private set; } = null!;
     [PluginService] internal static IDataManager            DataManager     { get; private set; } = null!;
+    [PluginService] internal static ISeStringEvaluator      SeStringEvaluator { get; private set; } = null!;
 
     public Configuration Configuration { get; init; }
 
@@ -59,6 +60,7 @@ public sealed class Plugin : IDalamudPlugin
     internal ModelCapabilityStore Capabilities { get; }
     internal TranslationPipeline Pipeline { get; }
     internal ConnectionDiagnostics Diagnostics { get; }
+    internal GlossaryManager Glossary { get; }
 
     private readonly WindowSystem           windowSystem = new("AetherGlot");
     private readonly ConfigWindow           configWindow;
@@ -91,15 +93,20 @@ public sealed class Plugin : IDalamudPlugin
                                                   new TranslationCache<InboundOutcome>(Configuration.Translation.CacheSize));
         Diagnostics     = new ConnectionDiagnostics(Sender, ProviderFactory, Capabilities);
 
+        Glossary = new GlossaryManager(
+            Configuration, DataManager, Log, httpClient, BuildConnectionSettings,
+            PluginInterface.GetPluginConfigDirectory(), PluginInterface.AssemblyLocation.DirectoryName!);
+        _ = Glossary.ReloadAsync();
+
         var translationCtx = new TranslationContext();
         var chatSender     = new DalamudChatSender(Log);
 
         translationService = new ChatTranslationService(
             Configuration, Pipeline, translationCtx, BuildConnectionSettings,
-            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, Log);
+            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, Log);
 
         // ── Windows ────────────────────────────────────────────────────────
-        sendPreviewWindow = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings, ClientState);
+        sendPreviewWindow = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings, ClientState, Glossary.Service);
         configWindow = new ConfigWindow(this);
         windowSystem.AddWindow(configWindow);
         windowSystem.AddWindow(sendPreviewWindow);
@@ -108,7 +115,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.AddHandler(CommandName, new CommandInfo(OnConfigCommand)
         {
             HelpMessage = Loc.Localize("CommandHelp",
-                "Open AetherGlot configuration. \"/aetherglot test\" runs the connection test, \"/aetherglot models\" lists models."),
+                "Open AetherGlot configuration. Subcommands: test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
         });
         CommandManager.AddHandler(SendCommandName, new CommandInfo(OnSendCommand)
         {
@@ -162,7 +169,12 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnConfigCommand(string command, string args)
     {
-        switch (args.Trim().ToLowerInvariant())
+        var trimmed = args.Trim();
+        var space   = trimmed.IndexOf(' ');
+        var sub     = (space < 0 ? trimmed : trimmed[..space]).ToLowerInvariant();
+        var rest    = space < 0 ? string.Empty : trimmed[(space + 1)..].Trim();
+
+        switch (sub)
         {
             case "test":
                 _ = RunConnectionTestAsync();
@@ -170,9 +182,60 @@ public sealed class Plugin : IDalamudPlugin
             case "models":
                 _ = ListModelsAsync();
                 break;
+            case "reload":
+                _ = ReloadGlossaryAsync();
+                break;
+            case "lookup" when rest.Length > 0:
+                LookupCommand(rest);
+                break;
             default:
                 configWindow.Toggle();
                 break;
+        }
+    }
+
+    // ── /aetherglot reload, /aetherglot lookup ─────────────────────────────
+
+    private async Task ReloadGlossaryAsync()
+    {
+        Echo(Loc.Localize("GlossaryReloading", "Reloading dictionaries..."));
+        await Glossary.ReloadAsync(forceDownload: true).ConfigureAwait(false);
+        var s = Glossary.Service.Stats;
+        var c = Glossary.Community;
+        Echo($"My dictionary {s.UserCount} · game data {s.GameDataCount} · community {s.CommunityCount} " +
+             $"(v{s.CommunityVersion ?? "?"}, {c?.Origin}) · auto-translate {Glossary.Catalog.Entries.Count}");
+        if (c?.Error is { } error)
+            Echo($"Community dictionary: {error}");
+    }
+
+    // Runs on the framework thread (command handler), so game state can be read
+    private void LookupCommand(string text)
+    {
+        var clientCode = ChatTranslationService.LanguageCode(ClientState.ClientLanguage);
+        var sourceCode = TermNormalizer.IsJapanese(text) ? "ja" : "en";
+        var targetCode = sourceCode == "ja" ? "en" : "ja";
+        if (sourceCode == clientCode && clientCode is not ("ja" or "en"))
+        {
+            Echo("Dictionary lookup supports Japanese ⇔ English only.");
+            return;
+        }
+
+        var inCombat = Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.InCombat];
+        var lookup   = Glossary.Service.Lookup(text, sourceCode, targetCode, inCombat, null, Configuration.Translation.MaxGlossaryHits);
+        if (lookup.Matches.Count == 0)
+        {
+            Echo(Loc.Localize("LookupNoHits", "No dictionary hits."));
+            return;
+        }
+
+        foreach (var m in lookup.Matches)
+        {
+            var entry   = m.Resolution.Entry;
+            var targets = m.Resolution.Chosen is { } chosen
+                ? chosen.TextFor(targetCode)
+                : string.Join(" / ", m.Resolution.Candidates.Select(c => $"{c.Sense.TextFor(targetCode)} ({c.Score})"));
+            var state = m.Resolution.IsAmbiguous ? " [ambiguous]" : string.Empty;
+            Echo($"{m.Hit.Surface} → {targets}  <{entry.Source}/{entry.Kind}>{state}");
         }
     }
 
@@ -321,6 +384,7 @@ public sealed class Plugin : IDalamudPlugin
         windowSystem.RemoveAllWindows();
         configWindow.Dispose();
         sendPreviewWindow.Dispose();
+        Glossary.Dispose();
         httpClient.Dispose();
         disposeCts.Dispose();
     }
