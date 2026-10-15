@@ -10,7 +10,8 @@ namespace AetherGlot;
 /// </summary>
 internal sealed class ChatTranslationService
 {
-    private const string EchoPrefix   = "[AetherGlot]";
+    // Prefix of the old Echo output; still ignored so old lines are never re-translated
+    private const string LegacyEchoPrefix = "[AetherGlot]";
     private const string UnresolvedOpen  = "‹";
     private const string UnresolvedClose = "›";
 
@@ -27,7 +28,12 @@ internal sealed class ChatTranslationService
     private readonly IFramework framework;
     private readonly ISeStringEvaluator evaluator;
     private readonly GlossaryManager glossary;
+    private readonly TranslationLog translationLog;
     private readonly IPluginLog log;
+
+    // Mention detector, rebuilt when the character or job changes (framework thread only)
+    private MentionDetector mentionDetector = MentionDetector.Empty;
+    private (string Name, uint Job) mentionKey;
 
     // Recent lines per channel, touched only on the framework thread
     private readonly Dictionary<XivChatType, Queue<string>> recentLines = new();
@@ -49,6 +55,7 @@ internal sealed class ChatTranslationService
         IFramework framework,
         ISeStringEvaluator evaluator,
         GlossaryManager glossary,
+        TranslationLog translationLog,
         IPluginLog log)
     {
         this.config      = config;
@@ -64,6 +71,7 @@ internal sealed class ChatTranslationService
         this.framework   = framework;
         this.evaluator   = evaluator;
         this.glossary    = glossary;
+        this.translationLog = translationLog;
         this.log         = log;
     }
 
@@ -79,12 +87,16 @@ internal sealed class ChatTranslationService
         var raw        = chatMessage.Message.TextValue;
         if (string.IsNullOrWhiteSpace(raw)) return;
 
-        // Prevent recursive translation of our own Echo outputs
-        if (raw.StartsWith(EchoPrefix, StringComparison.Ordinal)) return;
+        // Prevent recursive translation of our own game-chat output
+        if (raw.StartsWith(LegacyEchoPrefix, StringComparison.Ordinal)) return;
+        var prefix = config.Display.GameChat.Prefix;
+        if (!string.IsNullOrWhiteSpace(prefix) && raw.StartsWith(prefix, StringComparison.Ordinal)) return;
 
         var localName = objectTable.LocalPlayer?.Name.TextValue;
         if (config.SkipOwnMessages && !string.IsNullOrEmpty(localName) && senderName == localName)
             return;
+
+        if (ChannelInfo.GroupOf(channel) is not { } group) return;
 
         // Auto-translate phrases become {{atN}}; their text is already in the client language
         var (langName, langCode) = ClientLanguage(clientState.ClientLanguage);
@@ -109,18 +121,29 @@ internal sealed class ChatTranslationService
         // Combat state and party jobs are always used locally for sense resolution;
         // they are sent to the model only when context hints are enabled
         var inCombat  = condition[ConditionFlag.InCombat];
+        var mentions  = MentionDetectorForPlayer().Matches(message.DisplayOriginal);
+        var destinations = config.Display.Resolve(group, inCombat, mentions);
+        if (destinations == Destinations.None) return;
+
         var partyJobs = CapturePartyJobs();
         var hints     = config.Translation.SendContextHints ? CaptureHints(channel, inCombat, partyJobs) : null;
         RememberLine(channel, senderName, message.DisplayOriginal);
 
+        var (plainSender, world) = SplitSender(chatMessage.Sender);
+        var entry = destinations.HasFlag(Destinations.Log)
+            ? translationLog.Add(DateTimeOffset.Now, group, (int)channel, plainSender, world, message, mentions)
+            : null;
+
         // Fire-and-forget — background thread, never blocks the game thread
-        _ = TranslateInboundAsync(senderName, message, channel, langName, langCode, hints, inCombat, partyJobs);
+        _ = TranslateInboundAsync(plainSender, message, channel, langName, langCode, hints, inCombat, partyJobs, destinations, entry);
     }
 
     private async Task TranslateInboundAsync(
         string senderName, PlaceholderizedMessage message, XivChatType channel,
-        string langName, string langCode, TranslationHints? hints, bool inCombat, IReadOnlyList<string>? partyJobs)
+        string langName, string langCode, TranslationHints? hints, bool inCombat, IReadOnlyList<string>? partyJobs,
+        Destinations destinations, LogEntry? entry)
     {
+        InboundOutcome? outcome = null;
         try
         {
             var settings = connection();
@@ -139,7 +162,7 @@ internal sealed class ChatTranslationService
             var lookup = glossary.Service.Lookup(message.Text, sourceCode, langCode, inCombat, partyJobs, config.Translation.MaxGlossaryHits);
             var request = new InboundRequest(message.Text, message.AutoTranslateTexts, langName, langCode, hints, lookup.ToHints());
 
-            var outcome = await pipeline
+            outcome = await pipeline
                 .TranslateInboundAsync(request, settings, config.Translation.ToPipelineOptions())
                 .ConfigureAwait(false);
 
@@ -149,30 +172,33 @@ internal sealed class ChatTranslationService
             if (outcome.Kind == InboundOutcomeKind.Partial)
                 glossary.RecordUnresolved(outcome);
 
-            var line = FormatForEcho(outcome);
-            if (line is null)
-            {
-                if (outcome.Kind == InboundOutcomeKind.Fallback)
-                    log.Debug("[AetherGlot] Translation discarded: {Reason}", outcome.FailureReason ?? "unknown");
-                return;
-            }
+            if (outcome.Kind == InboundOutcomeKind.Fallback)
+                log.Debug("[AetherGlot] Translation discarded: {Reason}", outcome.FailureReason ?? "unknown");
 
-            var lang = string.IsNullOrWhiteSpace(outcome.DetectedLanguage) ? "??" : outcome.DetectedLanguage.ToUpperInvariant();
-            var echo = $"{EchoPrefix} {senderName} [{lang}]: {line}";
-            await framework.RunOnFrameworkThread(() => chatGui.Print(echo, null, (ushort)XivChatType.Echo)).ConfigureAwait(false);
+            // Game chat output (bubbles arrive in phase 4)
+            if (destinations.HasFlag(Destinations.GameChat) && FormatForGameChat(outcome) is { } line)
+            {
+                var echo = $"{config.Display.GameChat.Prefix} {senderName}: {line}".TrimStart();
+                await framework.RunOnFrameworkThread(() => chatGui.Print(echo, null, (ushort)XivChatType.Echo)).ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
             // Pipeline errors are already turned into fallbacks; this is a last resort
             log.Error("[AetherGlot] Inbound translation failed ({Type}).", ex.GetType().Name);
         }
+        finally
+        {
+            if (entry is not null)
+                translationLog.Complete(entry, outcome);
+        }
     }
 
     /// <summary>
-    /// Text to echo, or null when nothing should be shown. The original message is already in
-    /// the chat log, so fallbacks and skips print nothing here.
+    /// Text for the game chat, or null when nothing should be printed. The original message is
+    /// already in the chat log, so fallbacks and skips print nothing here.
     /// </summary>
-    private string? FormatForEcho(InboundOutcome outcome)
+    private string? FormatForGameChat(InboundOutcome outcome)
     {
         switch (outcome.Kind)
         {
@@ -209,6 +235,46 @@ internal sealed class ChatTranslationService
             Location:    string.IsNullOrWhiteSpace(location) ? null : location,
             PartyJobs:   jobs,
             RecentLines: recent);
+    }
+
+    /// <summary>Your name, job (EN/JA name and abbreviation) and role words.</summary>
+    private MentionDetector MentionDetectorForPlayer()
+    {
+        if (objectTable.LocalPlayer is not { } player) return MentionDetector.Empty;
+        var key = (player.Name.TextValue, player.ClassJob.RowId);
+        if (key == mentionKey) return mentionDetector;
+
+        var terms = MentionDetector.NameWords(key.TextValue).ToList();
+        foreach (var lang in new[] { Dalamud.Game.ClientLanguage.English, Dalamud.Game.ClientLanguage.Japanese })
+        {
+            if (dataManager.GetExcelSheet<ClassJob>(lang).GetRowOrDefault(key.RowId) is not { } job) continue;
+            terms.Add(job.Name.ExtractText());
+            terms.Add(job.Abbreviation.ExtractText());
+            if (lang == Dalamud.Game.ClientLanguage.English)
+            {
+                terms.Add(job.NameEnglish.ExtractText());
+                terms.AddRange(MentionDetector.RoleWords(job.Role));
+            }
+        }
+
+        mentionKey      = key;
+        mentionDetector = new MentionDetector(terms);
+        return mentionDetector;
+    }
+
+    /// <summary>"Name@World" style sender text → (name, world).</summary>
+    private static (string Name, string? World) SplitSender(SeString sender)
+    {
+        string? world = null;
+        foreach (var p in sender.Payloads)
+        {
+            if (p is PlayerPayload player)
+            {
+                world = player.World.ValueNullable?.Name.ExtractText();
+                return (player.PlayerName, string.IsNullOrWhiteSpace(world) ? null : world);
+            }
+        }
+        return (sender.TextValue, world);
     }
 
     // English job abbreviations of the party (e.g. "SCH") whatever the client language; framework thread only

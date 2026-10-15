@@ -61,9 +61,11 @@ public sealed class Plugin : IDalamudPlugin
     internal TranslationPipeline Pipeline { get; }
     internal ConnectionDiagnostics Diagnostics { get; }
     internal GlossaryManager Glossary { get; }
+    internal TranslationLog TranslationLog { get; }
 
     private readonly WindowSystem           windowSystem = new("AetherGlot");
     private readonly ConfigWindow           configWindow;
+    private readonly TranslationLogWindow   logWindow;
     private readonly SendPreviewWindow      sendPreviewWindow;
     private readonly ChatTranslationService translationService;
     private readonly HttpClient             httpClient;
@@ -98,24 +100,28 @@ public sealed class Plugin : IDalamudPlugin
             PluginInterface.GetPluginConfigDirectory(), PluginInterface.AssemblyLocation.DirectoryName!);
         _ = Glossary.ReloadAsync();
 
+        TranslationLog = new TranslationLog(Configuration.Display.Log.Capacity);
+
         var translationCtx = new TranslationContext();
         var chatSender     = new DalamudChatSender(Log);
 
         translationService = new ChatTranslationService(
             Configuration, Pipeline, translationCtx, BuildConnectionSettings,
-            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, Log);
+            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Log);
 
         // ── Windows ────────────────────────────────────────────────────────
         sendPreviewWindow = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings, ClientState, Glossary.Service);
         configWindow = new ConfigWindow(this);
+        logWindow    = new TranslationLogWindow(this);
         windowSystem.AddWindow(configWindow);
+        windowSystem.AddWindow(logWindow);
         windowSystem.AddWindow(sendPreviewWindow);
 
         // ── Commands ───────────────────────────────────────────────────────
         CommandManager.AddHandler(CommandName, new CommandInfo(OnConfigCommand)
         {
             HelpMessage = Loc.Localize("CommandHelp",
-                "Open AetherGlot configuration. Subcommands: test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
+                "Open AetherGlot settings. Subcommands: log (translation log), test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
         });
         CommandManager.AddHandler(SendCommandName, new CommandInfo(OnSendCommand)
         {
@@ -125,7 +131,7 @@ public sealed class Plugin : IDalamudPlugin
         ChatGui.ChatMessage += OnChatMessage;
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
-        PluginInterface.UiBuilder.OpenMainUi += OpenConfigUi;
+        PluginInterface.UiBuilder.OpenMainUi += OpenMainUi;
     }
 
     /// <summary>Current connection snapshot (config + secrets). Safe to call from any thread.</summary>
@@ -181,6 +187,9 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             case "models":
                 _ = ListModelsAsync();
+                break;
+            case "log":
+                logWindow.Toggle();
                 break;
             case "reload":
                 _ = ReloadGlossaryAsync();
@@ -372,6 +381,72 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OpenConfigUi() => configWindow.IsOpen = true;
 
+    private void OpenMainUi() => logWindow.IsOpen = true;
+
+    internal void OpenSettings() => configWindow.IsOpen = true;
+
+    internal void OpenLog() => logWindow.IsOpen = true;
+
+    internal void OpenReply(XivChatType channel) => sendPreviewWindow.OpenForReply(channel);
+
+    /// <summary>Saves a word from the log as a My dictionary entry and rebuilds the glossary.</summary>
+    internal void AddToMyDictionary(string surface, string meaning)
+    {
+        var clientJapanese = ClientState.ClientLanguage == Dalamud.Game.ClientLanguage.Japanese;
+        var (en, ja) = clientJapanese ? (surface, meaning) : (meaning, surface);
+        var id = "user:" + TermNormalizer.Normalize(surface);
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                Glossary.User.Upsert(TermEntry.Simple(id, TermKind.Other, TermSource.User, en, ja));
+                if (Glossary.Pending.Remove(surface)) Glossary.Pending.Save();
+                Glossary.Rebuild();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[AetherGlot] Could not save to {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
+            }
+        });
+    }
+
+    /// <summary>Adds sample entries to the log (display test, no model call).</summary>
+    internal void ShowSampleMessages()
+    {
+        var now = DateTimeOffset.Now;
+        var at  = new Dictionary<string, string> { ["at0"] = "【こんにちは！】" };
+
+        InboundOutcome Outcome(string source, IReadOnlyDictionary<string, string> map, InboundOutcomeKind kind,
+                               IReadOnlyList<DisplaySegment> segments, InboundResponse response) => new()
+        {
+            Request = new InboundRequest(source, map, "Japanese", "ja"), Kind = kind, Segments = segments, Response = response,
+        };
+
+        var m1 = Placeholderizer.Build([new AutoTranslatePart(2, 203, "こんにちは！"), new TextPart("opo > rapu > kua-ru, keep ur form uptime pls")]);
+        var e1 = TranslationLog.Add(now, ChannelGroup.Party, (int)XivChatType.Party, "Kaela Rhyne", "Tomberry", m1, false);
+        TranslationLog.Complete(e1, Outcome(m1.Text, m1.AutoTranslateTexts, InboundOutcomeKind.Translated,
+            [new("【こんにちは！】", SegmentKind.AutoTranslate), new(" 魔猿 → 走竜 → 猛虎の順で回して、型を切らさないでね", SegmentKind.Translated)],
+            new InboundResponse { Status = "ok", Lang = "en", Terms = [new() { Src = "opo", Dst = "壱の型：魔猿", From = "dict" }, new() { Src = "rapu", Dst = "弐の型：走竜", From = "dict" }] }));
+
+        var m2 = Placeholderizer.Build([new TextPart("brb bio, 2 min")]);
+        var e2 = TranslationLog.Add(now, ChannelGroup.Party, (int)XivChatType.Party, "Mirri Tolo", "Cactuar", m2, false);
+        TranslationLog.Complete(e2, Outcome(m2.Text, m2.AutoTranslateTexts, InboundOutcomeKind.Translated,
+            [new("ちょっとトイレ行ってきます、2分で戻ります", SegmentKind.Translated)],
+            new InboundResponse { Status = "ok", Lang = "en", Terms = [new() { Src = "bio", Dst = "トイレ（離席）", Conf = 0.92, Alts = ["バイオ（技）"] }] }));
+
+        var m3 = Placeholderizer.Build([new TextPart("ngl that pull was kinda mid, next one we do the zorp strat")]);
+        var e3 = TranslationLog.Add(now, ChannelGroup.Party, (int)XivChatType.Party, "Bort Halvsson", "Behemoth", m3, true);
+        TranslationLog.Complete(e3, Outcome(m3.Text, m3.AutoTranslateTexts, InboundOutcomeKind.Partial,
+            [new("正直今のトライは微妙だった、次は ", SegmentKind.Translated), new("zorp strat", SegmentKind.Unresolved), new(" でやろう", SegmentKind.Translated)],
+            new InboundResponse { Status = "partial", Lang = "en", Terms = [new() { Src = "pull", Dst = "トライ", From = "dict" }, new() { Src = "mid", Dst = "微妙", From = "slang", Conf = 0.88 }] }));
+
+        var m4 = Placeholderizer.Build([new TextPart("了解です！")]);
+        var e4 = TranslationLog.Add(now, ChannelGroup.Party, (int)XivChatType.Party, "ぷりん", "Tiamat", m4, false);
+        TranslationLog.Complete(e4, Outcome(m4.Text, m4.AutoTranslateTexts, InboundOutcomeKind.Skipped, [], new InboundResponse { Status = "skip", Lang = "ja", Translation = "" }));
+
+        logWindow.IsOpen = true;
+    }
+
     public void Dispose()
     {
         disposeCts.Cancel();
@@ -380,9 +455,10 @@ public sealed class Plugin : IDalamudPlugin
         ChatGui.ChatMessage -= OnChatMessage;
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
-        PluginInterface.UiBuilder.OpenMainUi -= OpenConfigUi;
+        PluginInterface.UiBuilder.OpenMainUi -= OpenMainUi;
         windowSystem.RemoveAllWindows();
         configWindow.Dispose();
+        logWindow.Dispose();
         sendPreviewWindow.Dispose();
         Glossary.Dispose();
         httpClient.Dispose();
