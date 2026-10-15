@@ -8,7 +8,7 @@ namespace AetherGlot.Windows;
 /// Four panels: input (placeholders, auto-translate map, glossary hints), context hints,
 /// validation, and the raw attempts. Header values are never shown, only their names.
 /// </summary>
-public sealed class InspectorWindow : Window, IDisposable
+public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
 {
     private readonly Plugin plugin;
 
@@ -25,7 +25,7 @@ public sealed class InspectorWindow : Window, IDisposable
     private bool openAddPopup;
 
     public InspectorWindow(Plugin plugin)
-        : base(Loc.Localize("InspectorTitle", "AetherGlot — Inspector") + "###AetherGlotInspector")
+        : base(Title())
     {
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(640, 420), MaximumSize = new Vector2(float.MaxValue, float.MaxValue) };
@@ -453,6 +453,11 @@ public sealed class InspectorWindow : Window, IDisposable
             ImGui.CloseCurrentPopup();
         ImGui.EndPopup();
     }
+
+    private static string Title() => Loc.Localize("InspectorTitle", "AetherGlot — Inspector") + "###AetherGlotInspector";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose() { }
 }

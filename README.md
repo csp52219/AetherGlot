@@ -8,14 +8,15 @@ A [Dalamud](https://github.com/goatcorp/Dalamud) plugin for **Final Fantasy XIV*
 
 | Feature | Details |
 |---|---|
-| **Inbound translation** | Translates chat from other players into your client language and shows the result as an Echo message. |
-| **Same-language skip** | Messages already in your client language are silently skipped by default (configurable). |
+| **Inbound translation** | Chat from other players is translated into your client language and shown as bubbles next to the party list, in the translation log and/or in the game chat (per channel). Messages already in your language are recognised by the model and not shown twice. |
+| **Outbound translation** | A send preview translates as you type, with tone (short / normal / polite), back-translation, alternatives and a 500-byte counter, then sends through the game's chat box. |
+| **Dictionaries** | Game data (job, action, status, duty and place names, every auto-translate phrase), a community dictionary for slang and mechanics, and your own dictionary with context rules for words with several meanings. |
+| **Auto-translate aware** | Auto-translate phrases are kept as placeholders and filled back in with the game's own text. |
+| **Inspector** | See exactly what was sent to the model and what came back (secrets never shown). |
+| **Connections** | Direct (OpenAI, Anthropic Claude, Google Gemini), LiteLLM (virtual keys, Cloudflare Access service tokens), or any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, …). Separate models for receiving and sending. |
+| **Secrets** | Keys are stored in Windows Credential Manager, never in the settings file. |
 | **Skip own messages** | Your own chat is not translated by default (configurable). |
-| **Outbound translation** | Translates your message before sending (optional, configurable prompt). |
-| **Provider choice** | OpenAI, Google Gemini, Anthropic Claude, or any OpenAI-compatible endpoint (Ollama, LM Studio, etc.). |
-| **Channel filter** | Choose exactly which chat channels (Say, Shout, Party, FC, Novice Network, LS 1–8, CWLS 1–8) to translate. |
-| **MMO-style prompts** | Pre-built casual / formal outbound prompts; fully editable by the user. |
-| **Multi-language UI** | Supports EN / JA / DE / FR via [CheapLoc](https://github.com/steverichey/CheapLoc). |
+| **Multi-language UI** | English, Japanese, German and French ([CheapLoc](https://github.com/goatcorp/CheapLoc)); follows Dalamud's language setting. |
 
 ---
 
@@ -61,17 +62,15 @@ This URL is **permanent** — it always points to the latest release.
 | Open the dictionary | `/aetherglot dict [text]` or *Open dictionary* in the Dictionary tab |
 | Browse auto-translate phrases | `/aetherglot at` |
 | Inspect the latest translation | `/aetherglot inspect`, or *Inspect* on a log entry |
-| Enable translation | Check *Enable inbound translation* (and/or outbound) |
-| Choose channels | Tick the chat channels you want translated |
-| Skip same-language | Off by default — uncheck *Translate even if message is in client language* to see all messages regardless |
-| Skip own messages | On by default — uncheck *Skip translation for own messages* to translate your own chat too |
+| Enable translation | General tab: *Translate received messages*, *Enable /agsend* |
+| Choose channels | Channels tab: tick the chat channels you want translated |
+| Choose where translations appear | Display tab: presets or the channel × destination table |
+| Skip own messages | On by default — uncheck *Skip my own messages* to translate your own chat too |
 
-Echo messages appear in-game as:
-```
-[AetherGlot] PlayerName [EN]: Translated text here
-```
-Parts that could not be translated are kept in the original language and marked like `‹zorp strat›`.
-When a response is discarded (invalid / refusal), nothing is echoed: the original message is already in the chat log.
+In the game chat a translation appears below the original with a prefix (default `[AG] ↳`), or in
+Echo. Parts that could not be translated are kept in the original language and marked like
+`‹zorp strat›`. When a response is discarded (invalid / refusal), nothing is printed: the original
+message is already in the chat log.
 
 ### Outbound send command
 
@@ -283,9 +282,29 @@ Unit tests run on every push / pull request (`.github/workflows/tests.yml`).
 
 ## Localization (i18n)
 
-Locale files live in `AetherGlot/loc/` as `<lang>.json`.  
-The English file (`en.json`) is the source; community translations are welcomed via pull request.  
-A Crowdin → GitHub Actions pipeline for automatic PR generation is planned.
+The UI is available in **English, Japanese, German and French** and follows Dalamud's language
+setting (changing it updates the texts and window titles immediately). Other languages fall back
+to English.
+
+- Locale files: `AetherGlot/loc/{en,ja,de,fr}.json` (CheapLoc format). `en.json` holds the same
+  English text as the fallbacks in the code.
+- Channel and game terms use the official in-game names of each language (e.g. *Neulinge*,
+  *Réseau des novices*, *Auto-Übersetzung*, *Traduction automatique*, 定型文).
+- `LocFilesTests` fails when a key is missing in any language, when `{0}`-style placeholders
+  differ, or when `en.json` no longer matches the English fallback in the code. Add new keys to all
+  four files in the same change.
+- Corrections and new languages are welcome as pull requests.
+
+### Settings migration
+
+Settings files from older versions are upgraded automatically on first start:
+
+- **v1 → v2:** plaintext API keys move to Windows Credential Manager and are removed from the file;
+  the single provider / model becomes the new connection settings (same model for receiving and
+  sending).
+- **v2 → v3:** the old default outbound prompt (which forced a very casual style) is cleared,
+  because the tone is now chosen in the send preview; a prompt you edited is kept as extra style
+  instructions. The unused *always translate* option is removed.
 
 ---
 

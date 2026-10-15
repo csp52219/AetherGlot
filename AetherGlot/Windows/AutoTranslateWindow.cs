@@ -8,7 +8,7 @@ namespace AetherGlot.Windows;
 /// (ID → {{atN}} → displayed text), the categories of the game data and every phrase in
 /// Japanese and English, with what the plugin uses it for.
 /// </summary>
-public sealed class AutoTranslateWindow : Window, IDisposable
+public sealed class AutoTranslateWindow : Window, IDisposable, IRelocalizable
 {
     private const float LeftWidth = 220;
 
@@ -23,7 +23,7 @@ public sealed class AutoTranslateWindow : Window, IDisposable
     private Dictionary<uint, AutoTranslateUsage> usageByGroup = new();
 
     public AutoTranslateWindow(Plugin plugin)
-        : base(Loc.Localize("AtTitle", "AetherGlot — Auto-translate") + "###AetherGlotAutoTranslate")
+        : base(Title())
     {
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(720, 400), MaximumSize = new Vector2(float.MaxValue, float.MaxValue) };
@@ -187,6 +187,11 @@ public sealed class AutoTranslateWindow : Window, IDisposable
         AutoTranslateUsage.PlaceName  => Loc.Localize("AtUsagePlace", "Also used as a context hint"),
         _                             => Loc.Localize("AtUsageDisplay", "Received: shown as is"),
     };
+
+    private static string Title() => Loc.Localize("AtTitle", "AetherGlot — Auto-translate") + "###AetherGlotAutoTranslate";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose() { }
 }

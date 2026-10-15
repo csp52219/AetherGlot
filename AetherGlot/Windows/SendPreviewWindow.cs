@@ -8,7 +8,7 @@ namespace AetherGlot.Windows;
 /// pick a tone or an alternative, then send the translation (Enter) or the original.
 /// Action / job names are fixed to the official in-game name of the target language.
 /// </summary>
-public sealed class SendPreviewWindow : Window, IDisposable
+public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
 {
     private static readonly TimeSpan Debounce = TimeSpan.FromMilliseconds(500);
     private const int InputBufferBytes = 2000;
@@ -81,7 +81,7 @@ public sealed class SendPreviewWindow : Window, IDisposable
         IClientState clientState,
         GlossaryService glossary,
         Action<OutboundOutcome> inspect)
-        : base(Loc.Localize("SendPreviewTitle", "AetherGlot — Send Preview") + "###AetherGlotSend")
+        : base(Title())
     {
         this.config      = config;
         this.pipeline    = pipeline;
@@ -443,6 +443,11 @@ public sealed class SendPreviewWindow : Window, IDisposable
         "ZH" => "Chinese",
         _    => code,
     };
+
+    private static string Title() => Loc.Localize("SendPreviewTitle", "AetherGlot — Send Preview") + "###AetherGlotSend";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose()
     {

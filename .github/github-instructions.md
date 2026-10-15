@@ -1,175 +1,88 @@
-# GitHub Copilot Instructions for AetherGlot
+# AetherGlot 開発ガイド（AI アシスタント・コントリビューター向け）
 
 ## プロジェクト概要
 
-**AetherGlot** は、FFXIV（Final Fantasy XIV）のゲーム内チャットをAI（LLM）APIを用いてリアルタイムに翻訳・ローカライズする Dalamud プラグインです。
+**AetherGlot** は、FFXIV のチャットを LLM で翻訳する Dalamud プラグインです。
 
-- FFXIV固有の用語・Lore用語を保持しながら正確に翻訳する
-- 受信チャット：他言語 → クライアント言語（ゲーム内Echoに表示）
-- 送信チャット：クライアント言語 → 相手の言語（カスタムプロンプト対応でMMOスラング化も可能）
-- 複数のAIプロバイダー（OpenAI、Gemini、Claude等）に対応
-- 多言語UI対応（CheapLoc + Crowdin）
+- **受信:** 他言語 → クライアント言語。表示先は吹き出し（パーティリスト横）、翻訳ログ、ゲームチャット。
+- **送信:** クライアント言語 → 相手の言語。送信プレビューでトーン（短く/普通/丁寧）を選び、逆翻訳と言い換え案で確認してから送る。
+- **辞書:** ゲームデータ（Lumina）、コミュニティ辞書（URL から取得してキャッシュ）、マイ辞書を併用する。優先順位はマイ辞書 > ゲームデータ > コミュニティ。
+- **接続:** Direct（OpenAI / Claude / Gemini）、LiteLLM（Cloudflare Access 対応）、OpenAI 互換。
 
 ---
 
 ## 技術スタック
 
-- **言語**: C# 12
-- **ターゲットフレームワーク**: .NET 8.0
-- **SDK**: `Dalamud.NET.Sdk`（NuGet経由、Dalamud API 11 / v13+準拠）
-- **UI**: `Dalamud.Bindings.ImGui`（旧 `ImGuiNET` からの移行済み）
-- **非同期通信**: `System.Net.Http.HttpClient`（async/await）
-- **多言語化**: `CheapLoc`（Crowdin連携を前提とした JSON ベースのロケールファイル）
+- **言語:** C# 14
+- **ターゲット:**
+  - プラグイン: `net10.0-windows`
+  - `AetherGlot.Core`: `net10.0`。Dalamud に依存しないので、単体テストができる。
+- **SDK:** `Dalamud.NET.Sdk` 15（Dalamud API 15）
+- **UI:** `Dalamud.Bindings.ImGui`
+- **ゲームデータ:** Lumina（`Lumina.Excel.Sheets`）、FFXIVClientStructs
+- **多言語化:** CheapLoc（`AetherGlot/loc/{en,ja,de,fr}.json`）
+- **テスト:** xUnit。統合テストは GitHub Actions の environment `integration` で手動実行する。
 
 ---
 
-## コーディング規約
+## 守ること
 
-### 基本方針
-- コードコメントおよびログメッセージは**英語**で記述する
-- UIラベル等のユーザー向け文字列は必ず `CheapLoc` を通じてローカライズ対応する（ハードコード禁止）
-- APIキーや認証情報はリポジトリにコミットしない。Dalamud の `Configuration.json` に保存する
+### セキュリティ
+- API キー、Virtual key、Cloudflare Access の Client ID / Secret は **Windows 資格情報マネージャー**（`ISecretStore`）に保存する。`Configuration.json` には絶対に書かない。
+- 秘密情報をログ、例外メッセージ、UI に出さない。検査画面のヘッダーは名前だけを表示し、値は `••••` にする（`RequestPreview`）。
+- 秘密情報をリポジトリにコミットしない。CI は GitHub の environment secrets を使う。
 
 ### 非同期処理
-- チャットイベントハンドラ（`ChatGui.ChatMessage`）内でAPIリクエストを直接行わない
-- 必ず `Task.Run` や `async/await` を使用してバックグラウンドで処理し、メインスレッドをブロックしない
+- チャットイベントの中では、メッセージのコピーとゲーム状態の取得だけを行う。API 呼び出しはバックグラウンドで行う。
+- ゲームの API（チャット送信、`Print` など）は `IFramework.RunOnFrameworkThread` で呼ぶ。
+- `HttpClient` はプラグインの寿命の間、1 つを使い回す。
 
-### ImGui（Dalamud.Bindings.ImGui）
-- `Dalamud.Bindings.ImGui` を使用し、旧 `ImGuiNET` は使用しない
-- パフォーマンス向上のため、文字列リテラルは可能な限り UTF-8 リテラル（`"Save"u8` 等）を使用する
+### 推測しない
+- ゲームのシート構造や ClientStructs のシグネチャは、Dalamud / Lumina の XML ドキュメント、メタデータ、データマイニング CSV で確認してから使う。
+- 例：チャット送信のコマンドは `TextCommand.Command` / `ShortCommand` のうち、全言語にあるものだけを使う（ビギナーチャンネルは `/beginner`）。
 
-### モデル・プロバイダー名
-- モデル名（例: `gpt-4o`）やエンドポイントをコード内にハードコードしない
-- 設定ファイルまたはAPI経由で動的に取得・更新できるように設計する
+### ハードコードしない
+- モデル名と URL は設定から読む。
+- 定型文の「使い方」はグループ番号ではなく、参照先のシート名から判定する。
 
-### README.md の常時更新
-- READMME.md は修正するたびに更新する
+### ローカライズ
+- ユーザーに見える文字列は `Loc.Localize("Key", "English fallback")` を通す。
+- キーを追加したら 4 言語すべての JSON に入れる。`LocFilesTests` が、キーの過不足・`{0}` などのプレースホルダーの不一致・英語フォールバックとの差異を検出する。
 
----
-
-## アーキテクチャ
-
-### プロバイダー抽象化レイヤー
-
-複数のAIプロバイダーをサポートするため、`ITranslatorProvider` インターフェースを実装する。
-新しいプロバイダー追加時は、このインターフェースを実装したクラスを追加するだけでよい構造を維持する。
-
-```csharp
-public interface ITranslatorProvider
-{
-    string ProviderName { get; }
-    Task<string> TranslateAsync(
-        string text,
-        string systemPrompt,
-        string userPrompt,
-        string apiKey,
-        string? customEndpoint = null);
-}
-```
-
-### チャットフロー
-
-```
-[FFXIV Chat Log]
-    └─> ChatGui.ChatMessage イベント
-        └─> 言語判定 (ClientState.ClientLanguage)
-            └─> ITranslatorProvider (抽象化レイヤー)
-                ├─ OpenAIProvider
-                ├─ GeminiProvider
-                ├─ ClaudeProvider
-                └─ CustomEndpointProvider (Ollama 等)
-                    └─> LLM API Call (システムプロンプト + 辞書注入)
-                        └─> Echo出力:
-                            [AetherGlot] <Player Name> [OriginLang]: <TranslatedText>
-```
+### README
+- 機能や操作が変わったら README.md も更新する。
 
 ---
 
-## 翻訳プロンプト設計
-
-### Echoフォーマット
+## 構成
 
 ```
-[AetherGlot] <Player Name> [OriginLang]: <TranslatedText>
+AetherGlot (プラグイン)                     AetherGlot.Core (Dalamud 非依存)
+ Plugin.cs                                   Connection/   接続設定、HTTP、診断、RequestPreview
+  ├─ ChatTranslationService                  Providers/    ITranslatorProvider と各実装
+  ├─ Windows/ 設定、翻訳ログ、送信プレビュー、 Translation/  パイプライン、プロンプト、検証、キャッシュ、ChatText
+  │           検査、辞書、定型文               Glossary/     辞書の索引、意味の解決、コミュニティ辞書、GlossaryBrowser
+  ├─ UI/ 吹き出し、テーマ、RichText            Display/      表示先の振り分け、BubbleBoard
+  ├─ Glossary/ ゲームデータ読み込み            Log/          TranslationLog
+  ├─ Helpers/DalamudChatSender                Security/     ISecretStore、SecretRedactor、移行
+  └─ Security/CredentialManagerSecretStore
 ```
 
-- `OriginLang`: 元の言語コード（例: `[EN]`, `[FR]`, `[DE]`）。AIに判定させる
-- 翻訳先言語は `ClientState.ClientLanguage` から動的に取得してシステムプロンプトに埋め込む
+### 翻訳の流れ（受信）
+1. 定型文（AutoTranslatePayload）を `{{atN}}` に置き換える。
+2. 本文に出てくる辞書の組だけを引き、文脈ヒントと一緒にプロンプトへ入れる。
+3. モデルに送る。JSON の形式が決まっていて、`response_format` に非対応のモデルには自動でプロンプト指示に切り替える。
+4. 検証する（スキーマ、拒否文、長さ、プレースホルダー）。失敗したら 1 回だけ再試行し、だめなら原文を表示する。
+5. 定型文を戻して表示する。
 
-### システムプロンプト（受信・Inbound）
-
-- パーティチャット、アライアンスチャット、CWLSチャットなどのどのチャットを翻訳の対象にするかを確認するための設定ウインドウが必要
-```
-Translate the input text to {CurrentClientLanguage}.
-Keep all FFXIV-specific terms, character names, and lore words intact.
-Identify the original language and return it as a language code (e.g., EN, FR, DE, JA).
-```
-
-### カスタムプロンプト（送信・Outbound）
-
-設定画面でユーザーが自由に編集可能なテキストエリアとして提供する。
-
-**デフォルトプリセット（Casual MMO）:**
-
-```
-You are a player in an MMORPG. Translate the user's input into natural English.
-- Keep it very casual. Avoid formal grammar or structures.
-- Actively use gaming slangs: 'i' instead of 'I', 'btw', 'ty', 'gg', 'brb', 'thx', 'omw', etc.
-- Avoid capitalizing words unless necessary. Do not end sentences with periods.
-```
-
-**フォーマルプリセット（Formal）:**
-
-```
-Translate the user's input into proper, polite English suitable for formal contexts or roleplay.
-Use complete sentences and correct grammar.
-```
+### 新しいプロバイダーの追加
+`ITranslatorProvider` を Core に実装し（`LlmRequest.JsonMode` に対応させる）、`TranslatorProviderFactory` に分岐を足す。
 
 ---
 
-## 多言語対応（i18n）
+## 参考資料
 
-### ロケールファイル構成
-
-```
-AetherGlot/
-└─ loc/
-   ├─ en.json
-   ├─ ja.json
-   ├─ de.json
-   └─ fr.json
-```
-
-### CheapLoc 初期化
-
-```csharp
-var locDir = Path.Combine(pluginInterface.AssemblyLocation.DirectoryName!, "loc");
-Loc.Setup(locDir, "AetherGlot_");
-```
-
-### Crowdin 連携方針
-
-- GitHub リポジトリと Crowdin を GitHub Actions で自動同期する
-- `loc/en.json` をソースファイルとして Crowdin にアップロードし、翻訳完了後に自動でプルリクエストを作成する構成を目指す
-
----
-
-## 実装時の注意事項
-
-1. **再帰ループ防止**: AIが翻訳して出力した自分のEchoメッセージ（`[AetherGlot]` プレフィックス）を、再度翻訳対象として処理しないようにフィルタリングを実装する
-2. **APIキーのセキュリティ**: APIキーは `Configuration.json` に保存し、`.gitignore` で除外する。誤コミット防止の仕組みを設ける
-3. **プロバイダーの拡張性**: モデル名・エンドポイントはハードコードせず、設定から動的に読み込む設計を徹底する
-4. **Dalamud API バージョン**: 最新の Dalamud SDK（Dalamud API 11 / v13+）に準拠し、deprecated な API は使用しない
-
----
-
-## 参考リソース
-
-- [Dalamud Documentation](https://v6.dalamud.dev/)
-- [Dalamud Plugin Project Template](https://github.com/goatcorp/DalamudPluginProjectTemplate)
-- [CheapLoc](https://github.com/steverichey/CheapLoc)
-- [Crowdin](https://crowdin.com/)
-
----
-
-外側のコードブロックを取り除いたことで、各セクションのコードスニペットが正しく独立したコードブロックとして機能するようになりました。このまま `.github/copilot-instructions.md` としてファイルに貼り付けてご利用いただけます。
+- [Dalamud](https://dalamud.dev/)
+- [FFXIVClientStructs](https://github.com/aers/FFXIVClientStructs)
+- [ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining)（シート構造の確認用）
+- [CheapLoc](https://github.com/goatcorp/CheapLoc)

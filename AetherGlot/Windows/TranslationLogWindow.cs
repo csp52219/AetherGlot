@@ -8,7 +8,7 @@ namespace AetherGlot.Windows;
 /// original, term chips and a reply button. Auto-scroll pauses while scrolled up and a
 /// "N new" button jumps back to the latest message.
 /// </summary>
-public sealed class TranslationLogWindow : Window, IDisposable
+public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
 {
     private readonly Plugin plugin;
     private readonly Configuration config;
@@ -32,7 +32,7 @@ public sealed class TranslationLogWindow : Window, IDisposable
     ];
 
     public TranslationLogWindow(Plugin plugin)
-        : base(Loc.Localize("LogWindowTitle", "AetherGlot — Translation Log") + "###AetherGlotLog")
+        : base(Title())
     {
         this.plugin = plugin;
         config      = plugin.Configuration;
@@ -359,6 +359,11 @@ public sealed class TranslationLogWindow : Window, IDisposable
             ImGui.CloseCurrentPopup();
         ImGui.EndPopup();
     }
+
+    private static string Title() => Loc.Localize("LogWindowTitle", "AetherGlot — Translation Log") + "###AetherGlotLog";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose() { }
 }
