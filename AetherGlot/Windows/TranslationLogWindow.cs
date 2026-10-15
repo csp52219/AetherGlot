@@ -250,6 +250,12 @@ public sealed class TranslationLogWindow : Window, IDisposable
 
         if (ImGui.SmallButton(Loc.Localize("LogReply", "Reply")))
             plugin.OpenReply((XivChatType)entry.Channel);
+        if (outcome is not null)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton(Loc.Localize("LogInspect", "Inspect")))
+                plugin.OpenInspector(entry);
+        }
     }
 
     // ── Scrolling ───────────────────────────────────────────────────────
@@ -313,6 +319,14 @@ public sealed class TranslationLogWindow : Window, IDisposable
             ImGui.SameLine();
             ImGui.TextColored(Theme.TextDim, string.Format(Loc.Localize("LogAverage", "avg {0:0.0}s"), avg.TotalSeconds));
         }
+
+        var label = Loc.Localize("LogInspectLatest", "Inspect latest");
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(label).X - 12));
+        if (!entries.Any(e => e.Outcome is not null)) ImGui.BeginDisabled();
+        if (ImGui.SmallButton(label))
+            plugin.InspectLatest();
+        if (!entries.Any(e => e.Outcome is not null)) ImGui.EndDisabled();
     }
 
     // ── Add to dictionary ───────────────────────────────────────────────

@@ -71,6 +71,9 @@ public sealed class Plugin : IDalamudPlugin
     private readonly TranslationLogWindow   logWindow;
     private readonly BubbleOverlay          bubbleOverlay;
     private readonly SendPreviewWindow      sendPreviewWindow;
+    private readonly InspectorWindow        inspectorWindow;
+    private readonly GlossaryWindow         glossaryWindow;
+    private readonly AutoTranslateWindow    autoTranslateWindow;
     private readonly ChatTranslationService translationService;
     private readonly HttpClient             httpClient;
     private readonly CancellationTokenSource disposeCts = new();
@@ -115,19 +118,26 @@ public sealed class Plugin : IDalamudPlugin
             ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Bubbles, Log);
 
         // ── Windows ────────────────────────────────────────────────────────
-        sendPreviewWindow = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings, ClientState, Glossary.Service);
+        inspectorWindow     = new InspectorWindow(this);
+        glossaryWindow      = new GlossaryWindow(this);
+        autoTranslateWindow = new AutoTranslateWindow(this);
+        sendPreviewWindow   = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings,
+                                                    ClientState, Glossary.Service, inspectorWindow.Inspect);
         configWindow = new ConfigWindow(this);
         logWindow    = new TranslationLogWindow(this);
         windowSystem.AddWindow(configWindow);
         windowSystem.AddWindow(logWindow);
         bubbleOverlay = new BubbleOverlay(Configuration, Bubbles, GameGui, KeyState, OpenLog);
         windowSystem.AddWindow(sendPreviewWindow);
+        windowSystem.AddWindow(inspectorWindow);
+        windowSystem.AddWindow(glossaryWindow);
+        windowSystem.AddWindow(autoTranslateWindow);
 
         // ── Commands ───────────────────────────────────────────────────────
         CommandManager.AddHandler(CommandName, new CommandInfo(OnConfigCommand)
         {
             HelpMessage = Loc.Localize("CommandHelp",
-                "Open AetherGlot settings. Subcommands: log (translation log), test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
+                "Open AetherGlot settings. Subcommands: log (translation log), dict [text] (dictionary), at (auto-translate list), inspect (latest translation), test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
         });
         CommandManager.AddHandler(SendCommandName, new CommandInfo(OnSendCommand)
         {
@@ -203,6 +213,17 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             case "lookup" when rest.Length > 0:
                 LookupCommand(rest);
+                break;
+            case "dict":
+                if (rest.Length > 0) glossaryWindow.OpenWithQuery(rest);
+                else glossaryWindow.Toggle();
+                break;
+            case "at":
+                autoTranslateWindow.Toggle();
+                break;
+            case "inspect":
+                if (!inspectorWindow.InspectLatest())
+                    Echo(Loc.Localize("InspectNothing", "Nothing to inspect yet: no translated message in the log."));
                 break;
             default:
                 configWindow.Toggle();
@@ -402,6 +423,42 @@ public sealed class Plugin : IDalamudPlugin
 
     internal void OpenReply(XivChatType channel) => sendPreviewWindow.OpenForReply(channel);
 
+    internal void OpenInspector(LogEntry entry) => inspectorWindow.Inspect(entry);
+
+    internal bool InspectLatest() => inspectorWindow.InspectLatest();
+
+    internal void OpenGlossary() => glossaryWindow.IsOpen = true;
+
+    internal void OpenAutoTranslate() => autoTranslateWindow.IsOpen = true;
+
+    /// <summary>Translates a log entry again with the same request, bypassing the cache, and updates the entry.</summary>
+    internal async Task RetranslateAsync(LogEntry entry)
+    {
+        if (entry.Outcome?.Request is not { } request) return;
+        var settings = BuildConnectionSettings();
+        if (ConnectionSettingsBuilder.MissingRequirement(settings) is { } missing)
+        {
+            Echo(missing);
+            return;
+        }
+        try
+        {
+            var outcome = await Pipeline.TranslateInboundAsync(request, settings, Configuration.Translation.ToPipelineOptions(),
+                                                              disposeCts.Token, bypassCache: true).ConfigureAwait(false);
+            TranslationLog.Complete(entry, outcome);
+            if (outcome.Kind == InboundOutcomeKind.Partial)
+                Glossary.RecordUnresolved(outcome);
+        }
+        catch (OperationCanceledException)
+        {
+            // Plugin unloading
+        }
+        catch (Exception ex)
+        {
+            Log.Error("[AetherGlot] Re-translation failed ({Type}).", ex.GetType().Name);
+        }
+    }
+
     /// <summary>Saves a word from the log as a My dictionary entry and rebuilds the glossary.</summary>
     internal void AddToMyDictionary(string surface, string meaning)
     {
@@ -478,6 +535,9 @@ public sealed class Plugin : IDalamudPlugin
         configWindow.Dispose();
         logWindow.Dispose();
         sendPreviewWindow.Dispose();
+        inspectorWindow.Dispose();
+        glossaryWindow.Dispose();
+        autoTranslateWindow.Dispose();
         Glossary.Dispose();
         httpClient.Dispose();
         disposeCts.Dispose();

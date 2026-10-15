@@ -58,6 +58,9 @@ This URL is **permanent** — it always points to the latest release.
 | Open the translation log | `/aetherglot log` or Dalamud's main UI button |
 | Configure connection | Choose Direct / LiteLLM / OpenAI-compatible, enter the URL, key and models |
 | Test the connection | `/aetherglot test` |
+| Open the dictionary | `/aetherglot dict [text]` or *Open dictionary* in the Dictionary tab |
+| Browse auto-translate phrases | `/aetherglot at` |
+| Inspect the latest translation | `/aetherglot inspect`, or *Inspect* on a log entry |
 | Enable translation | Check *Enable inbound translation* (and/or outbound) |
 | Choose channels | Tick the chat channels you want translated |
 | Skip same-language | Off by default — uncheck *Translate even if message is in client language* to see all messages regardless |
@@ -77,7 +80,21 @@ When a response is discarded (invalid / refusal), nothing is echoed: the origina
 /agsend <prefix> <text>
 ```
 
-Opens a preview window with the translation. Confirm to send to the chosen channel.
+Opens the send preview (also opened by *Reply* in the translation log):
+
+- Type in your language; the translation follows ~0.5 s after you stop typing.
+- Pick the channel and the tone (**Short / Normal / Polite**).
+- The translation is editable and shows its size (`N / 500` bytes, the chat limit; longer text is cut).
+- Term chips show the fixed names (actions, jobs, … use the game data's official name) and the
+  terms the model used; the back-translation and two alternatives (click one to use it) help you
+  check the meaning.
+- **Enter** sends the translation (Ctrl+Enter = new line); *Send original* sends what you typed;
+  *Cancel* closes. *Inspect* opens the inspector for this translation.
+
+Messages are sent through the game's chat box on the game thread. Text is reduced to one line
+without control characters and cut at 500 bytes, and the game's own sanitiser removes anything
+that is not plain text, so a message cannot carry links or run another command. Only the base
+channel commands that exist in every client language are used (`/p`, `/fc`, `/beginner`, `/cwl1`, …).
 
 | Prefix | Channel |
 |---|---|
@@ -155,6 +172,15 @@ party only / all / to me; messages that mention your name, job or role are highl
 footer shows the connection state, inbound model, dictionary version and size, and the average
 response time.
 
+**Inspector** (*Inspect* on a log entry, *Inspect latest* in the footer, or `/aetherglot inspect`)
+shows one translation in four panels: ① the text sent (auto-translate phrases as `{{atN}}`, the
+auto-translate map and IDs, the glossary pairs), ② the context hints (combat, location, party
+jobs, recent lines), ③ validation (JSON schema, refusal, length, placeholders, unresolved count,
+and why the original was shown), ④ every model attempt with model, tokens, time, JSON mode and
+the raw reply, plus the prompts. The endpoint and request header **names** are listed; header
+values are always shown as `••••`. *Translate again* repeats the same request without the cache
+and updates the log entry; unresolved words can be registered from there.
+
 **Settings** have six tabs: General, Connection (with the staged connection test), AI & translation,
 Channels (which channels are translated), Dictionary, and Display.
 
@@ -209,6 +235,25 @@ meanings (e.g. `bio`) overrides the single game-data term so its context rules c
   served from the same host as your LiteLLM / OpenAI-compatible endpoint, so the service token is
   never sent to third parties such as GitHub.
 
+**Dictionary window** (`/aetherglot dict`):
+
+- Left: sources with counts (all / auto-translate / game names / community / mine), *Pending
+  approval* (unresolved words with *Register* / *Ignore*), last update times and *Update now*.
+- Center: search over English, Japanese and abbreviations (spelling variants are ignored), a kind
+  filter and *+ Add*. Columns: English / abbreviations, Japanese, kind, context rules, source.
+- Right: for My dictionary entries, the sense editor — kind, spellings (comma separated), and per
+  meaning: English, Japanese, priority, combat condition (either / in combat / out of combat),
+  words that appear with it, party jobs, note; plus what to do when unsure (show every meaning /
+  use the top priority). Delete needs Shift+click. Other entries are read-only and can be copied to
+  My dictionary to override them.
+
+**Auto-translate viewer** (`/aetherglot at`, read-only): how a phrase travels (payload ID →
+`{{atN}}` in the text sent to the model → phrase filled back in, using the latest received
+message), the categories of the game data with counts, and every phrase in Japanese and English
+with what the plugin uses it for (jobs: fixed when received and a replacement candidate when
+sending; actions: also matched when typed; places: also a context hint; others: shown as is).
+*Only seen in chat* lists the phrases received this session.
+
 Commands: `/aetherglot reload` reloads all dictionaries (and downloads the community dictionary);
 `/aetherglot lookup <text>` shows which terms and meanings would be used for a message.
 
@@ -250,7 +295,10 @@ A Crowdin → GitHub Actions pipeline for automatic PR generation is planned.
 AetherGlot (plugin, Dalamud)               AetherGlot.Core (no Dalamud dependency, unit-tested)
  Plugin.cs                                  Connection/  ConnectionSettings(+Builder), LlmHttpSender,
   ├─ ChatTranslationService ───────────────►             AccessResponseClassifier, RequestDecorator,
-  ├─ Windows/ConfigWindow, SendPreviewWindow             ConnectionDiagnostics
+  ├─ Windows/ConfigWindow, TranslationLog,              ConnectionDiagnostics, RequestPreview
+  │   SendPreview, Inspector, Glossary,
+  │   AutoTranslate
+  ├─ Helpers/DalamudChatSender
   └─ Security/CredentialManagerSecretStore   Providers/   ITranslatorProvider
                                                           ├─ OpenAICompatibleProvider ─ LiteLlmProvider
                                                           ├─ ClaudeProvider

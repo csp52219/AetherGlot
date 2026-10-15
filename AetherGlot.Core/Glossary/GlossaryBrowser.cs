@@ -94,6 +94,42 @@ public static class GlossaryBrowser
         }).ToList(),
     };
 
+    /// <summary>
+    /// Cleans an edited My dictionary entry before saving: trims text, drops empty senses and
+    /// aliases, gives new entries an id and every sense a unique id.
+    /// Returns an error message (English, for the log / fallback text) or null when it can be saved.
+    /// </summary>
+    public static string? PrepareUserEntry(TermEntry e)
+    {
+        e.Source = TermSource.User;
+        e.AliasesEn = CleanList(e.AliasesEn);
+        e.AliasesJa = CleanList(e.AliasesJa);
+        foreach (var s in e.Senses)
+        {
+            s.En = s.En.Trim();
+            s.Ja = s.Ja.Trim();
+            s.Note = string.IsNullOrWhiteSpace(s.Note) ? null : s.Note.Trim();
+            s.Rules.Words = CleanList(s.Rules.Words);
+            s.Rules.PartyJobs = CleanList(s.Rules.PartyJobs).Select(j => j.ToUpperInvariant()).Distinct(StringComparer.Ordinal).ToList();
+        }
+        e.Senses = e.Senses.Where(s => s.En.Length > 0 || s.Ja.Length > 0).ToList();
+        if (e.Senses.Count == 0) return "Enter at least one meaning (English or Japanese).";
+        if (e.Senses.Any(s => s.En.Length == 0 || s.Ja.Length == 0)) return "Every meaning needs both an English and a Japanese text.";
+
+        if (string.IsNullOrWhiteSpace(e.Id) || e.Id == "user:")
+        {
+            var basis = TermNormalizer.Normalize(e.AliasesEn.FirstOrDefault() ?? e.Senses[0].En, collapseRepeat: false);
+            if (basis.Length == 0) basis = TermNormalizer.Normalize(e.Senses[0].Ja, collapseRepeat: false);
+            e.Id = "user:" + basis;
+        }
+        for (var i = 0; i < e.Senses.Count; i++)
+            e.Senses[i].Id = e.Senses.Count == 1 ? e.Id : $"{e.Id}#{i + 1}";
+        return null;
+    }
+
+    private static List<string> CleanList(IEnumerable<string> items) =>
+        items.Select(i => i.Trim()).Where(i => i.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+
     private static IEnumerable<string> Texts(TermEntry e)
     {
         foreach (var s in e.Senses) { yield return s.En; yield return s.Ja; }

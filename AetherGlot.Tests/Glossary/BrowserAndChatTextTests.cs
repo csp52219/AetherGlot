@@ -81,3 +81,48 @@ public sealed class BrowserAndChatTextTests
         Assert.True(ChatText.ByteCount(text) <= ChatText.MaxBytes);
     }
 }
+
+public sealed class PrepareUserEntryTests
+{
+    [Fact]
+    public void NewEntry_GetsIdsAndCleanLists()
+    {
+        var e = new TermEntry
+        {
+            Kind = TermKind.Slang,
+            AliasesEn = [" bio ", "bio", ""],
+            Senses =
+            [
+                new TermSense { En = " toilet break ", Ja = "トイレ", Rules = new SenseRules { Words = ["brb", " brb", ""], PartyJobs = ["sch", "SCH"] } },
+                new TermSense { En = "", Ja = "" },
+                new TermSense { En = "Bio", Ja = "バイオ", Priority = 1, Rules = new SenseRules { InCombat = true } },
+            ],
+        };
+
+        Assert.Null(GlossaryBrowser.PrepareUserEntry(e));
+        Assert.Equal("user:bio", e.Id);
+        Assert.Equal(TermSource.User, e.Source);
+        Assert.Equal(["bio"], e.AliasesEn);
+        Assert.Equal(2, e.Senses.Count);
+        Assert.Equal(["user:bio#1", "user:bio#2"], e.Senses.Select(s => s.Id));
+        Assert.Equal("toilet break", e.Senses[0].En);
+        Assert.Equal(["brb"], e.Senses[0].Rules.Words);
+        Assert.Equal(["SCH"], e.Senses[0].Rules.PartyJobs);
+    }
+
+    [Fact]
+    public void ExistingId_IsKept()
+    {
+        var e = TermEntry.Simple("user:zorp", TermKind.Slang, TermSource.User, "zorp strat", "ゾープ作戦");
+        Assert.Null(GlossaryBrowser.PrepareUserEntry(e));
+        Assert.Equal("user:zorp", e.Id);
+        Assert.Equal("user:zorp", e.Senses[0].Id);
+    }
+
+    [Fact]
+    public void MissingTexts_AreRejected()
+    {
+        Assert.NotNull(GlossaryBrowser.PrepareUserEntry(new TermEntry { Senses = [new TermSense()] }));
+        Assert.NotNull(GlossaryBrowser.PrepareUserEntry(new TermEntry { Senses = [new TermSense { En = "only english" }] }));
+    }
+}
