@@ -172,10 +172,11 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 
         ImGui.Spacing();
         var loading = plugin.Glossary.IsLoading;
-        if (loading) ImGui.BeginDisabled();
+        var disabled1 = loading;
+        if (disabled1) ImGui.BeginDisabled();
         if (ImGui.Button(loading ? Loc.Localize("GlossaryUpdating", "Updating…") : Loc.Localize("DictUpdateNow", "Update now"), new Vector2(-1, 0)))
             _ = plugin.Glossary.ReloadAsync(forceDownload: true);
-        if (loading) ImGui.EndDisabled();
+        if (disabled1) ImGui.EndDisabled();
         if (plugin.Glossary.Community?.Error is { } error)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, Theme.Warn);
@@ -335,13 +336,14 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         ImGui.SetNextItemWidth(320);
         ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
-        if (!canSave) ImGui.BeginDisabled();
+        var disabled2 = !canSave;
+        if (disabled2) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
-        if (!canSave) ImGui.EndDisabled();
+        if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
         if (ImGui.Button(Loc.Localize("GlossaryEditFull", "Edit with senses…")))
         {
@@ -494,7 +496,8 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         }
 
         ImGui.Spacing();
-        if (saving) ImGui.BeginDisabled();
+        var disabled3 = saving;
+        if (disabled3) ImGui.BeginDisabled();
         ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent);
         ImGui.PushStyleColor(ImGuiCol.Text, Theme.AccentText);
         var save = ImGui.Button(Loc.Localize("GlossarySave", "Save"));
@@ -510,7 +513,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             ImGui.PopStyleColor();
             if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.Localize("GlossaryDeleteTip", "Hold Shift and click to delete."));
         }
-        if (saving) ImGui.EndDisabled();
+        if (disabled3) ImGui.EndDisabled();
 
         if (editorError is not null)
         {

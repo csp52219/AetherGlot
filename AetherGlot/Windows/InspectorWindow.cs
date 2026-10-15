@@ -124,10 +124,11 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
             ImGui.SameLine();
             ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - 220));
             var canRetry = o is not null && !retranslating;
-            if (!canRetry) ImGui.BeginDisabled();
+            var disabled1 = !canRetry;
+            if (disabled1) ImGui.BeginDisabled();
             if (ImGui.Button(retranslating ? Loc.Localize("InspectorRetranslating", "Translating…") : Loc.Localize("InspectorRetranslate", "Translate again")))
                 Retranslate(entry);
-            if (!canRetry) ImGui.EndDisabled();
+            if (disabled1) ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGui.SetTooltip(Loc.Localize("InspectorRetranslateTip", "Same request, cache bypassed. The log entry is updated."));
             ImGui.SameLine();
@@ -441,13 +442,14 @@ public sealed class InspectorWindow : Window, IDisposable, IRelocalizable
         ImGui.SetNextItemWidth(320);
         ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
-        if (!canSave) ImGui.BeginDisabled();
+        var disabled2 = !canSave;
+        if (disabled2) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
-        if (!canSave) ImGui.EndDisabled();
+        if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
         if (ImGui.Button(Loc.Localize("AddDictCancel", "Cancel")))
             ImGui.CloseCurrentPopup();
