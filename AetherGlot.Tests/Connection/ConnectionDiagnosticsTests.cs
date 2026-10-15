@@ -110,4 +110,27 @@ public sealed class ConnectionDiagnosticsTests
         Assert.Equal(DiagnosticStatus.Skipped, report.Steps[0].Status);
         Assert.True(report.AllPassed);
     }
+
+    [Fact]
+    public async Task NonJsonReply_IsDescribed_EmptyVsText()
+    {
+        var (diag, handler, _) = Create(r => r.Uri.AbsolutePath switch
+        {
+            "/health/liveliness" => FakeHttpHandler.Json("{}"),
+            "/v1/models"         => FakeHttpHandler.Json("""{"data":[{"id":"fast-model"},{"id":"good-model"}]}"""),
+            _ => r.Body.Contains("fast-model") ? FakeHttpHandler.Completion("") : FakeHttpHandler.Completion("Sure!\nHere you go: ok = true"),
+        });
+
+        var report = await diag.RunAsync(TestSettings.LiteLlm());
+
+        var inbound  = report.Steps.Single(s => s.Kind == DiagnosticStepKind.JsonInbound);
+        var outbound = report.Steps.Single(s => s.Kind == DiagnosticStepKind.JsonOutbound);
+        Assert.Equal(DiagnosticStatus.Failed, inbound.Status);
+        Assert.Contains("empty", inbound.Detail);
+        Assert.Contains("\"Sure! Here you go: ok = true\"", outbound.Detail);
+
+        // The probe must leave room for reasoning models
+        using var body = System.Text.Json.JsonDocument.Parse(handler.Requests.Last().Body);
+        Assert.True(body.RootElement.GetProperty("max_tokens").GetInt32() >= 256);
+    }
 }

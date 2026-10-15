@@ -53,6 +53,11 @@ public sealed class ConnectionDiagnostics
     private const string ProbeSystem = "You are a connectivity test. Reply with ONLY this JSON object and nothing else: {\"ok\":true}";
     private const string ProbeUser   = "ping";
 
+    // Generous on purpose: models with reasoning/thinking enabled on the proxy spend part of
+    // the budget before writing any text, and a tiny limit leaves the reply empty.
+    private const int ProbeMaxTokens = 512;
+    private const int SnippetLength  = 60;
+
     private readonly LlmHttpSender sender;
     private readonly ITranslatorProviderFactory providerFactory;
     private readonly IModelCapabilityStore capabilities;
@@ -201,12 +206,12 @@ public sealed class ConnectionDiagnostics
         {
             try
             {
-                var response = await provider.CompleteAsync(new LlmRequest(model, ProbeSystem, ProbeUser, useJson, 32), ct).ConfigureAwait(false);
+                var response = await provider.CompleteAsync(new LlmRequest(model, ProbeSystem, ProbeUser, useJson, ProbeMaxTokens), ct).ConfigureAwait(false);
                 if (useJson) capabilities.SetJsonModeSupport(model, true);
 
                 var json = ResponseParser.ExtractJsonObject(response.Content);
                 if (json is null)
-                    return new(kind, DiagnosticStatus.Failed, $"{model}: the reply was not JSON.", Elapsed: response.Elapsed);
+                    return new(kind, DiagnosticStatus.Failed, $"{model}: {DescribeNonJson(response.Content)}", Elapsed: response.Elapsed);
 
                 return retried
                     ? new(kind, DiagnosticStatus.Warning, $"{model}: OK without response_format (prompt-only JSON).", Elapsed: response.Elapsed)
@@ -235,6 +240,17 @@ public sealed class ConnectionDiagnostics
             }
         }
         return new(kind, DiagnosticStatus.Failed, $"{model}: no answer.");
+    }
+
+    /// <summary>Says whether the reply was empty or shows its start (model output, never secrets).</summary>
+    internal static string DescribeNonJson(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "the reply was empty (if the model uses reasoning/thinking on the proxy, it may have used up the token limit).";
+
+        var oneLine = string.Join(' ', content.Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var snippet = oneLine.Length > SnippetLength ? oneLine[..SnippetLength] + "…" : oneLine;
+        return $"the reply was not JSON: \"{snippet}\"";
     }
 
     private ITranslatorProvider? SafeProvider(ConnectionSettings settings, out string? error)
