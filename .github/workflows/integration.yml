@@ -1,0 +1,74 @@
+name: Integration Tests
+
+# Runs the real-API integration tests (LiteLLM + Cloudflare Access by default).
+# Values come from the GitHub environment "integration":
+#   secrets: AETHERGLOT_LITELLM_KEY, AETHERGLOT_CF_CLIENT_ID, AETHERGLOT_CF_CLIENT_SECRET
+#            (optional) AETHERGLOT_OPENAI_KEY, AETHERGLOT_CLAUDE_KEY, AETHERGLOT_GEMINI_KEY
+#   vars:    AETHERGLOT_LITELLM_BASE_URL, AETHERGLOT_LITELLM_INBOUND_MODEL,
+#            AETHERGLOT_LITELLM_OUTBOUND_MODEL, AETHERGLOT_LITELLM_USER_TAG
+#            (optional) AETHERGLOT_OPENAI_MODEL, AETHERGLOT_CLAUDE_MODEL, AETHERGLOT_GEMINI_MODEL
+# Manual only: every run spends LLM tokens, and secrets are never exposed to fork PRs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "Which integration tests to run"
+        type: choice
+        options: [LiteLLM, OpenAI, Claude, Gemini, All]
+        default: LiteLLM
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    environment: integration
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Select tests
+        id: filter
+        shell: bash
+        run: |
+          case "${{ inputs.provider }}" in
+            LiteLLM) f='Category=Integration&FullyQualifiedName~LiteLlm' ;;
+            OpenAI)  f='Category=Integration&FullyQualifiedName~OpenAI' ;;
+            Claude)  f='Category=Integration&FullyQualifiedName~Claude' ;;
+            Gemini)  f='Category=Integration&FullyQualifiedName~Gemini' ;;
+            *)       f='Category=Integration' ;;
+          esac
+          echo "value=$f" >> "$GITHUB_OUTPUT"
+
+      # Core + Tests only: no Dalamud needed
+      - name: Run integration tests
+        run: >
+          dotnet test AetherGlot.Tests/AetherGlot.Tests.csproj
+          --filter "${{ steps.filter.outputs.value }}"
+          --logger "console;verbosity=normal"
+        env:
+          AETHERGLOT_LITELLM_BASE_URL:       ${{ vars.AETHERGLOT_LITELLM_BASE_URL }}
+          AETHERGLOT_LITELLM_INBOUND_MODEL:  ${{ vars.AETHERGLOT_LITELLM_INBOUND_MODEL }}
+          AETHERGLOT_LITELLM_OUTBOUND_MODEL: ${{ vars.AETHERGLOT_LITELLM_OUTBOUND_MODEL }}
+          AETHERGLOT_LITELLM_USER_TAG:       ${{ vars.AETHERGLOT_LITELLM_USER_TAG }}
+          AETHERGLOT_LITELLM_KEY:            ${{ secrets.AETHERGLOT_LITELLM_KEY }}
+          AETHERGLOT_CF_CLIENT_ID:           ${{ secrets.AETHERGLOT_CF_CLIENT_ID }}
+          AETHERGLOT_CF_CLIENT_SECRET:       ${{ secrets.AETHERGLOT_CF_CLIENT_SECRET }}
+          AETHERGLOT_OPENAI_KEY:             ${{ secrets.AETHERGLOT_OPENAI_KEY }}
+          AETHERGLOT_OPENAI_MODEL:           ${{ vars.AETHERGLOT_OPENAI_MODEL }}
+          AETHERGLOT_CLAUDE_KEY:             ${{ secrets.AETHERGLOT_CLAUDE_KEY }}
+          AETHERGLOT_CLAUDE_MODEL:           ${{ vars.AETHERGLOT_CLAUDE_MODEL }}
+          AETHERGLOT_GEMINI_KEY:             ${{ secrets.AETHERGLOT_GEMINI_KEY }}
+          AETHERGLOT_GEMINI_MODEL:           ${{ vars.AETHERGLOT_GEMINI_MODEL }}

@@ -1,13 +1,29 @@
-# AetherGlot Integration Test — 1Password secret references
+# AetherGlot Integration Test — 1Password secret references (local runs)
 #
-# This file contains op:// references only — no real secrets.
-# It is safe to commit to version control.
+# This file contains op:// references only — no real secrets. It is safe to commit.
+# CI does not use this file: .github/workflows/integration.yml reads the same variable
+# names from the GitHub environment "integration".
 #
-# Edit the paths below to match your 1Password vault structure.
+# Edit the paths below to match your 1Password vault structure, and comment out
+# anything you don't use (tests for a backend are skipped when its variables are unset).
 # Use `op item list` and `op item get <item> --format json` to find exact field names.
 #
-# Format: ENV_VAR_NAME=op://VaultName/ItemName/FieldName
+# Format: ENV_VAR_NAME=op://VaultName/ItemName/FieldName   (plain values are passed through as-is)
 #
+
+# ── LiteLLM proxy (+ Cloudflare Access service token) ── placeholders: adjust to your vault
+AETHERGLOT_LITELLM_BASE_URL=op://Personal/AetherGlot LiteLLM/base_url
+AETHERGLOT_LITELLM_KEY=op://Personal/AetherGlot LiteLLM/virtual_key
+AETHERGLOT_LITELLM_INBOUND_MODEL=op://Personal/AetherGlot LiteLLM/inbound_model
+AETHERGLOT_LITELLM_OUTBOUND_MODEL=op://Personal/AetherGlot LiteLLM/outbound_model
+AETHERGLOT_LITELLM_USER_TAG=aetherglot-local-integration
+AETHERGLOT_CF_CLIENT_ID=op://Personal/AetherGlot Cloudflare Access/client_id
+AETHERGLOT_CF_CLIENT_SECRET=op://Personal/AetherGlot Cloudflare Access/client_secret
+
+# ── Direct vendor APIs (model names are required too) ──
 AETHERGLOT_CLAUDE_KEY=op://Personal/Claude/SecretKey/AETHERGLOT_CLAUDE_KEY
 AETHERGLOT_OPENAI_KEY=op://Personal/OpenAI/AETHERGLOT_OPENAI_KEY
 AETHERGLOT_GEMINI_KEY=op://Personal/google.com/AETHERGLOT_GEMINI_KEY
+# AETHERGLOT_CLAUDE_MODEL=<model id>
+# AETHERGLOT_OPENAI_MODEL=<model id>
+# AETHERGLOT_GEMINI_MODEL=<model id>

@@ -1,11 +1,12 @@
+using AetherGlot.Core.Connection;
+
 namespace AetherGlot.Providers;
 
 /// <summary>
-/// Resolves a named provider to an <see cref="ITranslatorProvider"/> instance.
-/// The concrete implementation in the plugin project injects an HttpClient;
-/// tests supply a mock instead.
+/// Resolves the provider for a connection snapshot. The concrete factory shares one
+/// HttpClient; tests supply a mock instead.
 /// </summary>
 public interface ITranslatorProviderFactory
 {
-    ITranslatorProvider GetProvider(string providerName);
+    ITranslatorProvider GetProvider(ConnectionSettings settings);
 }

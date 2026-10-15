@@ -1,8 +1,6 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
-using AetherGlot.Core;
-using AetherGlot.Helpers;
 
 namespace AetherGlot.Windows;
 
@@ -10,22 +8,23 @@ namespace AetherGlot.Windows;
 /// Floating window that shows a translation preview for outbound chat and lets
 /// the player choose a channel and confirm sending.
 /// Opened by the <c>/agsend [channel] &lt;text&gt;</c> command.
+/// The full preview (tone, term chips, alternatives as buttons) arrives in phase 5.
 /// </summary>
 public sealed class SendPreviewWindow : Window, IDisposable
 {
-    private readonly Configuration          config;
-    private readonly ITranslationOrchestrator orchestrator;
-    private readonly ITranslationContext    context;
-    private readonly IPromptBuilder         promptBuilder;
-    private readonly IChatSender            chatSender;
+    private readonly Configuration            config;
+    private readonly ITranslationPipeline     pipeline;
+    private readonly ITranslationContext      context;
+    private readonly IChatSender              chatSender;
+    private readonly Func<ConnectionSettings> connection;
+    private readonly IClientState             clientState;
 
-    // ── per-invocation UI state ──────────────────────────────────────────────
-    private string       originalText    = string.Empty;
-    private string       translatedText  = string.Empty;
-    private bool         isTranslating   = false;
-    private string?      errorMessage    = null;
-    private XivChatType  selectedChannel;
+    /// <summary>Immutable snapshot swapped atomically by the background task.</summary>
+    private sealed record PreviewState(bool Translating, OutboundOutcome? Outcome, string? Error);
 
+    private volatile PreviewState state = new(false, null, null);
+    private string      originalText = string.Empty;
+    private XivChatType selectedChannel;
     private CancellationTokenSource? cts;
 
     // Channels available in the send-channel combo
@@ -58,117 +57,93 @@ public sealed class SendPreviewWindow : Window, IDisposable
 
     public SendPreviewWindow(
         Configuration config,
-        ITranslationOrchestrator orchestrator,
+        ITranslationPipeline pipeline,
         ITranslationContext context,
-        IPromptBuilder promptBuilder,
-        IChatSender chatSender)
+        IChatSender chatSender,
+        Func<ConnectionSettings> connection,
+        IClientState clientState)
         : base(Loc.Localize("SendPreviewTitle", "AetherGlot — Send Preview"))
     {
-        this.config       = config;
-        this.orchestrator = orchestrator;
-        this.context      = context;
-        this.promptBuilder = promptBuilder;
-        this.chatSender   = chatSender;
+        this.config      = config;
+        this.pipeline    = pipeline;
+        this.context     = context;
+        this.chatSender  = chatSender;
+        this.connection  = connection;
+        this.clientState = clientState;
 
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(420, 200),
-            MaximumSize = new Vector2(800, 400),
+            MinimumSize = new Vector2(420, 220),
+            MaximumSize = new Vector2(900, 600),
         };
         IsOpen = false;
     }
 
     /// <summary>
     /// Opens the window and starts an async translation for <paramref name="text"/>.
-    /// Can be called multiple times; previous translations are cancelled.
-    /// An optional <paramref name="channelOverride"/> sets the initial channel,
-    /// falling back to <see cref="Configuration.DefaultOutboundChannel"/>.
+    /// Previous translations are cancelled.
     /// </summary>
     public void OpenForText(string text, XivChatType? channelOverride = null)
     {
-        originalText   = text;
-        translatedText = string.Empty;
-        errorMessage   = null;
-        isTranslating  = true;
+        originalText    = text;
         selectedChannel = channelOverride ?? config.DefaultOutboundChannel;
-        IsOpen = true;
-
-        _ = StartTranslationAsync(text, selectedChannel, CancellationToken.None);
+        IsOpen          = true;
+        StartTranslation();
     }
 
     public override void Draw()
     {
-        // ── Source text ──────────────────────────────────────────────────────
+        var s = state;
+
         ImGui.TextUnformatted(Loc.Localize("SendPreviewOriginal", "Original:"));
         ImGui.SameLine();
         ImGui.TextWrapped(originalText);
-
         ImGui.Separator();
 
-        // ── Translation result ───────────────────────────────────────────────
         ImGui.TextUnformatted(Loc.Localize("SendPreviewTranslation", "Translation:"));
         ImGui.SameLine();
-
-        if (isTranslating)
+        if (s.Translating)
         {
             ImGui.TextUnformatted(Loc.Localize("SendPreviewTranslating", "Translating..."));
         }
-        else if (errorMessage is not null)
+        else if (s.Error is not null)
         {
-            ImGui.TextUnformatted($"[Error] {errorMessage}");
+            ImGui.TextWrapped($"[Error] {s.Error}");
         }
-        else
+        else if (s.Outcome is { Success: true } o)
         {
-            ImGui.TextWrapped(translatedText);
+            ImGui.TextWrapped(o.Translation);
+            if (!string.IsNullOrWhiteSpace(o.Response?.BackTranslation))
+            {
+                ImGui.TextUnformatted(Loc.Localize("SendPreviewBack", "Back-translation:"));
+                ImGui.SameLine();
+                ImGui.TextWrapped(o.Response!.BackTranslation!);
+            }
         }
 
         ImGui.Separator();
-
-        // ── Channel selector ─────────────────────────────────────────────────
-        ImGui.TextUnformatted(Loc.Localize("SendPreviewChannel", "Channel:"));
-        ImGui.SameLine();
-
-        var currentLabel = SendableChannels
-            .FirstOrDefault(c => c.Type == selectedChannel)
-            .Label ?? selectedChannel.ToString();
-
-        if (ImGui.BeginCombo("##sendchannel", currentLabel))
-        {
-            foreach (var (type, label) in SendableChannels)
-            {
-                var isSelected = type == selectedChannel;
-                if (ImGui.Selectable(label, isSelected))
-                {
-                    if (type != selectedChannel)
-                    {
-                        selectedChannel = type;
-                        // Re-translate for the new channel's context language
-                        translatedText  = string.Empty;
-                        errorMessage    = null;
-                        isTranslating   = true;
-                        _ = StartTranslationAsync(originalText, selectedChannel, CancellationToken.None);
-                    }
-                }
-                if (isSelected) ImGui.SetItemDefaultFocus();
-            }
-            ImGui.EndCombo();
-        }
-
+        DrawChannelCombo();
         ImGui.Spacing();
 
-        // ── Action buttons ───────────────────────────────────────────────────
-        var canSend = !isTranslating && errorMessage is null && !string.IsNullOrWhiteSpace(translatedText);
+        var translation = s.Outcome is { Success: true } ok ? ok.Translation : string.Empty;
+        var canSend     = !s.Translating && s.Error is null && !string.IsNullOrWhiteSpace(translation);
 
         if (!canSend) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("SendPreviewSendBtn", "Send")))
         {
-            chatSender.SendMessage(selectedChannel, translatedText);
+            chatSender.SendMessage(selectedChannel, translation);
             IsOpen = false;
         }
         if (!canSend) ImGui.EndDisabled();
 
         ImGui.SameLine();
+        if (ImGui.Button(Loc.Localize("SendPreviewSendOriginalBtn", "Send original")))
+        {
+            chatSender.SendMessage(selectedChannel, originalText);
+            IsOpen = false;
+        }
 
+        ImGui.SameLine();
         if (ImGui.Button(Loc.Localize("SendPreviewCancelBtn", "Cancel")))
         {
             cts?.Cancel();
@@ -176,61 +151,86 @@ public sealed class SendPreviewWindow : Window, IDisposable
         }
     }
 
-    // Cancels any in-flight translation and starts a new one.
-    private async Task StartTranslationAsync(string text, XivChatType channel, CancellationToken _)
+    private void DrawChannelCombo()
     {
-        // Cancel previous request
+        ImGui.TextUnformatted(Loc.Localize("SendPreviewChannel", "Channel:"));
+        ImGui.SameLine();
+
+        var currentLabel = SendableChannels.FirstOrDefault(c => c.Type == selectedChannel).Label ?? selectedChannel.ToString();
+        if (!ImGui.BeginCombo("##sendchannel", currentLabel)) return;
+
+        foreach (var (type, label) in SendableChannels)
+        {
+            var isSelected = type == selectedChannel;
+            if (ImGui.Selectable(label, isSelected) && type != selectedChannel)
+            {
+                selectedChannel = type;
+                // Re-translate for the new channel's context language
+                StartTranslation();
+            }
+            if (isSelected) ImGui.SetItemDefaultFocus();
+        }
+        ImGui.EndCombo();
+    }
+
+    // Cancels any in-flight translation and starts a new one.
+    private void StartTranslation()
+    {
         cts?.Cancel();
         cts?.Dispose();
         var localCts = new CancellationTokenSource();
-        cts = localCts;
+        cts   = localCts;
+        state = new PreviewState(true, null, null);
 
-        try
+        var settings = connection();
+        if (ConnectionSettingsBuilder.MissingRequirement(settings) is { } missing)
         {
-            var options = BuildOptions();
-            if (options is null)
+            state = new PreviewState(false, null, missing);
+            return;
+        }
+
+        var target  = LanguageName(context.GetContextLanguage(selectedChannel.ToString(), "EN"));
+        var request = new OutboundRequest(
+            originalText,
+            ChatTranslationService.LanguageName(clientState.ClientLanguage),
+            target,
+            OutboundTone.Normal,
+            config.OutboundPrompt);
+
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                errorMessage  = Loc.Localize("SendPreviewNoApiKey", "Provider or API key not configured.");
-                isTranslating = false;
-                return;
+                var outcome = await pipeline
+                    .TranslateOutboundAsync(request, settings, config.Translation.ToPipelineOptions(), localCts.Token)
+                    .ConfigureAwait(false);
+                if (localCts.IsCancellationRequested) return;
+                state = outcome.Success
+                    ? new PreviewState(false, outcome, null)
+                    : new PreviewState(false, outcome, outcome.FailureReason ?? "Translation failed.");
             }
-
-            var targetLang = context.GetContextLanguage(channel.ToString(), "EN");
-            var result = await orchestrator
-                .TranslateOutboundAsync(text, targetLang, config.OutboundPrompt, options, localCts.Token)
-                .ConfigureAwait(false);
-
-            if (localCts.IsCancellationRequested) return;
-
-            isTranslating = false;
-            if (result.IsSuccess)
-                translatedText = result.TranslatedText;
-            else
-                errorMessage = result.ErrorMessage;
-        }
-        catch (OperationCanceledException)
-        {
-            // Silently discard cancelled requests
-        }
-        catch (Exception ex)
-        {
-            isTranslating = false;
-            errorMessage  = ex.Message;
-        }
+            catch (OperationCanceledException)
+            {
+                // Superseded by a newer request
+            }
+            catch (Exception ex)
+            {
+                if (!localCts.IsCancellationRequested)
+                    state = new PreviewState(false, null, ex.GetType().Name);
+            }
+        });
     }
 
-    private TranslationOptions? BuildOptions()
+    private static string LanguageName(string code) => code.ToUpperInvariant() switch
     {
-        if (string.IsNullOrWhiteSpace(config.SelectedProvider)) return null;
-        if (!config.ApiKeys.TryGetValue(config.SelectedProvider, out var apiKey)
-            || string.IsNullOrWhiteSpace(apiKey)) return null;
-
-        return new TranslationOptions(
-            config.SelectedProvider,
-            apiKey,
-            config.SelectedModel,
-            string.IsNullOrWhiteSpace(config.CustomEndpoint) ? null : config.CustomEndpoint);
-    }
+        "EN" => "English",
+        "JA" => "Japanese",
+        "DE" => "German",
+        "FR" => "French",
+        "KO" => "Korean",
+        "ZH" => "Chinese",
+        _    => code,
+    };
 
     public void Dispose()
     {
