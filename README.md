@@ -158,6 +158,19 @@ response time.
 **Settings** have six tabs: General, Connection (with the staged connection test), AI & translation,
 Channels (which channels are translated), Dictionary, and Display.
 
+**Bubbles** (party / alliance): the translation appears next to the speaker's row of the party
+list and fades out (default 6 s, longer for long text, at most 2 per member). Click a bubble to pin
+it. A small list of the last 3 translations sits at the bottom right; toggle it with
+**Ctrl+Shift+T** (configurable). When the party list is hidden no bubbles are drawn; the log still
+receives everything. Speakers are matched to party list rows by name, including the abbreviated
+name display styles (`K. Rhyne`, `Kaela R.`, `K. R.`). Alliance members outside your own party
+are not in the party list, so they get no bubble.
+
+**Game chat**: the translation is printed below the original in the same channel (or in Echo),
+with a prefix (default `[AG] ↳`). *Replace the original* rewrites the original line instead, but
+only when the translation is already cached (the line has to be changed before it is shown);
+otherwise the translation is added as a new line.
+
 **Display tab**: presets (Recommended / Window only / Game chat only / Bubbles only) and a table of
 channel × destination (bubble, translation log, game chat) with an *in combat* column per channel
 (all / to me only / stop). Editing the table switches the preset to *Custom*.

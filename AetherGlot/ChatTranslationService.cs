@@ -29,7 +29,12 @@ internal sealed class ChatTranslationService
     private readonly ISeStringEvaluator evaluator;
     private readonly GlossaryManager glossary;
     private readonly TranslationLog translationLog;
+    private readonly BubbleBoard bubbles;
     private readonly IPluginLog log;
+
+    // Lines we printed ourselves; ignored when they come back through ChatMessage
+    private readonly ConcurrentDictionary<string, DateTime> printedLines = new(StringComparer.Ordinal);
+    private static readonly TimeSpan PrintedLineTtl = TimeSpan.FromSeconds(30);
 
     // Mention detector, rebuilt when the character or job changes (framework thread only)
     private MentionDetector mentionDetector = MentionDetector.Empty;
@@ -56,6 +61,7 @@ internal sealed class ChatTranslationService
         ISeStringEvaluator evaluator,
         GlossaryManager glossary,
         TranslationLog translationLog,
+        BubbleBoard bubbles,
         IPluginLog log)
     {
         this.config      = config;
@@ -72,6 +78,7 @@ internal sealed class ChatTranslationService
         this.evaluator   = evaluator;
         this.glossary    = glossary;
         this.translationLog = translationLog;
+        this.bubbles     = bubbles;
         this.log         = log;
     }
 
@@ -88,6 +95,7 @@ internal sealed class ChatTranslationService
         if (string.IsNullOrWhiteSpace(raw)) return;
 
         // Prevent recursive translation of our own game-chat output
+        if (IsOwnOutput(raw)) return;
         if (raw.StartsWith(LegacyEchoPrefix, StringComparison.Ordinal)) return;
         var prefix = config.Display.GameChat.Prefix;
         if (!string.IsNullOrWhiteSpace(prefix) && raw.StartsWith(prefix, StringComparison.Ordinal)) return;
@@ -134,8 +142,57 @@ internal sealed class ChatTranslationService
             ? translationLog.Add(DateTimeOffset.Now, group, (int)channel, plainSender, world, message, mentions)
             : null;
 
+        // Replacing the original line has to happen now, inside the event, so it only works
+        // when the translation is already cached; otherwise the translation is added as a new line.
+        var replaced = destinations.HasFlag(Destinations.GameChat) && config.Display.GameChat.ReplaceOriginal &&
+                       TryReplaceWithCached(chatMessage, message, langName, langCode);
+
         // Fire-and-forget — background thread, never blocks the game thread
-        _ = TranslateInboundAsync(plainSender, message, channel, langName, langCode, hints, inCombat, partyJobs, destinations, entry);
+        _ = TranslateInboundAsync(plainSender, message, channel, langName, langCode, hints, inCombat, partyJobs,
+                                  replaced ? destinations & ~Destinations.GameChat : destinations, entry);
+    }
+
+    private bool TryReplaceWithCached(IHandleableChatMessage chatMessage, PlaceholderizedMessage message, string langName, string langCode)
+    {
+        try
+        {
+            var request = new InboundRequest(message.Text, message.AutoTranslateTexts, langName, langCode);
+            if (!pipeline.TryGetCachedInbound(request, connection(), out var cached) || FormatForGameChat(cached) is not { } line)
+                return false;
+            chatMessage.Message = new SeString(new TextPayload(line));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log.Debug("[AetherGlot] Could not replace the original line ({Type}).", ex.GetType().Name);
+            return false;
+        }
+    }
+
+    private bool IsOwnOutput(string text)
+    {
+        if (!printedLines.TryGetValue(text, out var at)) return false;
+        if (DateTime.UtcNow - at <= PrintedLineTtl) return true;
+        printedLines.TryRemove(text, out _);
+        return false;
+    }
+
+    /// <summary>Prints a translation to the original channel or Echo (framework thread).</summary>
+    private void PrintToGameChat(XivChatType channel, string sender, string line)
+    {
+        var settings = config.Display.GameChat;
+        var prefix   = string.IsNullOrWhiteSpace(settings.Prefix) ? string.Empty : settings.Prefix.Trim() + " ";
+
+        // Below the original line the sender is obvious; in Echo it is not
+        var text = settings.Output == GameChatOutput.Echo ? $"{prefix}{sender}: {line}" : $"{prefix}{line}";
+        var type = settings.Output == GameChatOutput.Echo ? XivChatType.Echo : channel;
+
+        var now = DateTime.UtcNow;
+        foreach (var (k, v) in printedLines)
+            if (now - v > PrintedLineTtl) printedLines.TryRemove(k, out _);
+        printedLines[text] = now;
+
+        chatGui.Print(new XivChatEntry { Type = type, Message = new SeString(new TextPayload(text)) });
     }
 
     private async Task TranslateInboundAsync(
@@ -175,12 +232,11 @@ internal sealed class ChatTranslationService
             if (outcome.Kind == InboundOutcomeKind.Fallback)
                 log.Debug("[AetherGlot] Translation discarded: {Reason}", outcome.FailureReason ?? "unknown");
 
-            // Game chat output (bubbles arrive in phase 4)
+            if (destinations.HasFlag(Destinations.Bubble) && BubbleSegments(outcome) is { } segments)
+                bubbles.Add(senderName, segments, DateTimeOffset.Now, BubbleNote(outcome));
+
             if (destinations.HasFlag(Destinations.GameChat) && FormatForGameChat(outcome) is { } line)
-            {
-                var echo = $"{config.Display.GameChat.Prefix} {senderName}: {line}".TrimStart();
-                await framework.RunOnFrameworkThread(() => chatGui.Print(echo, null, (ushort)XivChatType.Echo)).ConfigureAwait(false);
-            }
+                await framework.RunOnFrameworkThread(() => PrintToGameChat(channel, senderName, line)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -236,6 +292,18 @@ internal sealed class ChatTranslationService
             PartyJobs:   jobs,
             RecentLines: recent);
     }
+
+    /// <summary>Segments for a bubble, or null when nothing should be shown.</summary>
+    private IReadOnlyList<DisplaySegment>? BubbleSegments(InboundOutcome outcome) => outcome.Kind switch
+    {
+        InboundOutcomeKind.Translated => outcome.Segments,
+        InboundOutcomeKind.Partial when config.Translation.UnresolvedMode == UnresolvedDisplayMode.PartialMarked => outcome.Segments,
+        _ => null, // skipped / original: the original is already in the chat
+    };
+
+    /// <summary>"bio = トイレ（離席）" for the first term the model chose between meanings.</summary>
+    private static string? BubbleNote(InboundOutcome outcome) =>
+        outcome.Response?.Terms.FirstOrDefault(t => t.Alts.Count > 0) is { } t ? $"{t.Src} = {t.Dst}" : null;
 
     /// <summary>Your name, job (EN/JA name and abbreviation) and role words.</summary>
     private MentionDetector MentionDetectorForPlayer()

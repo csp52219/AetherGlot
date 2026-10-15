@@ -152,6 +152,21 @@ public sealed class TranslationPipelineTests
     }
 
     [Fact]
+    public async Task TryGetCachedInbound_IsSynchronous_AndOnlyHitsAfterATranslation()
+    {
+        var (pipe, handler, _) = TestSettings.Pipeline((_, _) => FakeHttpHandler.Completion(
+            """{"status":"ok","lang":"en","translation":"了解","terms":[],"unresolved":[]}"""));
+        var request = TestSettings.Inbound("roger");
+
+        Assert.False(pipe.TryGetCachedInbound(request, TestSettings.LiteLlm(), out _));
+        await pipe.TranslateInboundAsync(request, TestSettings.LiteLlm(), Options);
+        Assert.True(pipe.TryGetCachedInbound(request, TestSettings.LiteLlm(), out var cached));
+        Assert.True(cached.FromCache);
+        Assert.Equal("了解", cached.DisplayText);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
     public async Task Fallback_IsNotCached()
     {
         var (pipe, handler, _) = TestSettings.Pipeline((_, _) => FakeHttpHandler.Completion("not json"));

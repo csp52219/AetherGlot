@@ -71,6 +71,32 @@ public sealed class BubbleSettings
     public float Seconds { get; set; } = 6f;
     public int MaxPerMember { get; set; } = 2;
     public bool ExtendByLength { get; set; } = true;
+
+    /// <summary>Small list of the last 3 translations at the bottom right.</summary>
+    public bool ShowHistory { get; set; } = true;
+
+    /// <summary>Toggles the history (default Ctrl+Shift+T).</summary>
+    public HotkeySettings HistoryHotkey { get; set; } = new();
+}
+
+/// <summary>Modifier keys + one key (a VirtualKey name such as "T" or "F9").</summary>
+[Serializable]
+public sealed class HotkeySettings
+{
+    public bool Ctrl { get; set; } = true;
+    public bool Shift { get; set; } = true;
+    public bool Alt { get; set; }
+    public string Key { get; set; } = "T";
+
+    public override string ToString()
+    {
+        var parts = new List<string>();
+        if (Ctrl) parts.Add("Ctrl");
+        if (Shift) parts.Add("Shift");
+        if (Alt) parts.Add("Alt");
+        parts.Add(Key);
+        return string.Join("+", parts);
+    }
 }
 
 [Serializable]
