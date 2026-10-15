@@ -40,6 +40,20 @@ A [Dalamud](https://github.com/goatcorp/Dalamud) plugin for **Final Fantasy XIV*
 
 This URL is **permanent** — it always points to the latest release.
 
+### Publishing a release (maintainers)
+
+The [Release workflow](.github/workflows/release.yml) builds the plugin and publishes a GitHub
+Release with `latest.zip` (the plugin package) and `repo.json` (the Dalamud repository manifest
+that the URL above serves). Start it in either of two ways:
+
+- push a tag: `git tag v1.2.3 && git push origin v1.2.3`, or
+- *Actions → Release → Run workflow* with a version such as `1.2.3` (the tag is created on the
+  selected branch; tick *pre-release* to keep it off the "latest" URL).
+
+The version is `1.2.3` (assembly version `1.2.3.0`) or the full four-part `1.2.3.4`. The
+workflow runs the unit tests first and compiles against the current Dalamud release
+(`goatcorp.github.io/dalamud-distrib/latest.zip`).
+
 ### Manual (dev build)
 
 1. Build the plugin (see [Building](#building)).
