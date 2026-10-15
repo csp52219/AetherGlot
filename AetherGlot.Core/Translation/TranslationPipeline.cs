@@ -120,6 +120,17 @@ public sealed class TranslationPipeline : ITranslationPipeline
         return outcome;
     }
 
+    public bool TryGetCachedInbound(InboundRequest request, ConnectionSettings connection, out InboundOutcome outcome)
+    {
+        if (cache.TryGet(InboundCacheKey(request, connection, connection.InboundModel), out var cached))
+        {
+            outcome = cached.AsCached();
+            return true;
+        }
+        outcome = null!;
+        return false;
+    }
+
     public async Task<OutboundOutcome> TranslateOutboundAsync(
         OutboundRequest request, ConnectionSettings connection, PipelineOptions options,
         CancellationToken ct = default)

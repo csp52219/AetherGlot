@@ -12,6 +12,12 @@ public interface ITranslationPipeline
         InboundRequest request, ConnectionSettings connection, PipelineOptions options,
         CancellationToken ct = default, bool bypassCache = false);
 
+    /// <summary>
+    /// Synchronous cache lookup (no network), for decisions that must be made inside the chat
+    /// event, such as replacing the original line.
+    /// </summary>
+    bool TryGetCachedInbound(InboundRequest request, ConnectionSettings connection, out InboundOutcome outcome);
+
     Task<OutboundOutcome> TranslateOutboundAsync(
         OutboundRequest request, ConnectionSettings connection, PipelineOptions options,
         CancellationToken ct = default);

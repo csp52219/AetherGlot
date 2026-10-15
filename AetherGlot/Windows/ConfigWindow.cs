@@ -632,7 +632,33 @@ public sealed class ConfigWindow : Window, IDisposable
             b.MaxPerMember = Math.Clamp(max, 1, 5);
         var extend = b.ExtendByLength;
         if (ImGui.Checkbox(Loc.Localize("BubbleExtend", "Longer for long text"), ref extend)) b.ExtendByLength = extend;
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("BubblePhase4", "(bubbles arrive in the next update)"));
+
+        ImGui.Spacing();
+        var history = b.ShowHistory;
+        if (ImGui.Checkbox(Loc.Localize("BubbleHistory", "Recent 3 at bottom right"), ref history)) b.ShowHistory = history;
+        DrawHotkey(b.HistoryHotkey);
+    }
+
+    private static readonly string[] HotkeyKeys =
+        Enumerable.Range('A', 26).Select(c => ((char)c).ToString())
+                  .Concat(Enumerable.Range(1, 12).Select(i => $"F{i}"))
+                  .ToArray();
+
+    private static void DrawHotkey(HotkeySettings hk)
+    {
+        ImGui.TextColored(Theme.TextDim, Loc.Localize("HotkeyLabel", "Toggle key"));
+        var ctrl = hk.Ctrl;
+        if (ImGui.Checkbox("Ctrl##hk", ref ctrl)) hk.Ctrl = ctrl;
+        ImGui.SameLine();
+        var shift = hk.Shift;
+        if (ImGui.Checkbox("Shift##hk", ref shift)) hk.Shift = shift;
+        ImGui.SameLine();
+        var alt = hk.Alt;
+        if (ImGui.Checkbox("Alt##hk", ref alt)) hk.Alt = alt;
+        ImGui.SameLine();
+        var index = Math.Max(0, Array.IndexOf(HotkeyKeys, hk.Key.ToUpperInvariant()));
+        ImGui.SetNextItemWidth(60);
+        if (ImGui.Combo("##hkkey", ref index, HotkeyKeys)) hk.Key = HotkeyKeys[index];
     }
 
     private static void DrawLogCard(LogSettings l)

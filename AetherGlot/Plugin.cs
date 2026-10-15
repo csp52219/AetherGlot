@@ -49,6 +49,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPartyList              PartyList       { get; private set; } = null!;
     [PluginService] internal static IDataManager            DataManager     { get; private set; } = null!;
     [PluginService] internal static ISeStringEvaluator      SeStringEvaluator { get; private set; } = null!;
+    [PluginService] internal static IGameGui                GameGui         { get; private set; } = null!;
+    [PluginService] internal static IKeyState               KeyState        { get; private set; } = null!;
 
     public Configuration Configuration { get; init; }
 
@@ -62,10 +64,12 @@ public sealed class Plugin : IDalamudPlugin
     internal ConnectionDiagnostics Diagnostics { get; }
     internal GlossaryManager Glossary { get; }
     internal TranslationLog TranslationLog { get; }
+    internal BubbleBoard Bubbles { get; }
 
     private readonly WindowSystem           windowSystem = new("AetherGlot");
     private readonly ConfigWindow           configWindow;
     private readonly TranslationLogWindow   logWindow;
+    private readonly BubbleOverlay          bubbleOverlay;
     private readonly SendPreviewWindow      sendPreviewWindow;
     private readonly ChatTranslationService translationService;
     private readonly HttpClient             httpClient;
@@ -101,13 +105,14 @@ public sealed class Plugin : IDalamudPlugin
         _ = Glossary.ReloadAsync();
 
         TranslationLog = new TranslationLog(Configuration.Display.Log.Capacity);
+        Bubbles        = new BubbleBoard(() => Configuration.Display.Bubble);
 
         var translationCtx = new TranslationContext();
         var chatSender     = new DalamudChatSender(Log);
 
         translationService = new ChatTranslationService(
             Configuration, Pipeline, translationCtx, BuildConnectionSettings,
-            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Log);
+            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Bubbles, Log);
 
         // ── Windows ────────────────────────────────────────────────────────
         sendPreviewWindow = new SendPreviewWindow(Configuration, Pipeline, translationCtx, chatSender, BuildConnectionSettings, ClientState, Glossary.Service);
@@ -115,6 +120,7 @@ public sealed class Plugin : IDalamudPlugin
         logWindow    = new TranslationLogWindow(this);
         windowSystem.AddWindow(configWindow);
         windowSystem.AddWindow(logWindow);
+        bubbleOverlay = new BubbleOverlay(Configuration, Bubbles, GameGui, KeyState, OpenLog);
         windowSystem.AddWindow(sendPreviewWindow);
 
         // ── Commands ───────────────────────────────────────────────────────
@@ -129,6 +135,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         ChatGui.ChatMessage += OnChatMessage;
+        Framework.Update += OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
         PluginInterface.UiBuilder.OpenMainUi += OpenMainUi;
@@ -377,7 +384,13 @@ public sealed class Plugin : IDalamudPlugin
         sendPreviewWindow.OpenForText(text, channel);
     }
 
-    private void DrawUI() => windowSystem.Draw();
+    private void DrawUI()
+    {
+        bubbleOverlay.Draw();
+        windowSystem.Draw();
+    }
+
+    private void OnFrameworkUpdate(IFramework framework) => bubbleOverlay.Update();
 
     private void OpenConfigUi() => configWindow.IsOpen = true;
 
@@ -444,6 +457,10 @@ public sealed class Plugin : IDalamudPlugin
         var e4 = TranslationLog.Add(now, ChannelGroup.Party, (int)XivChatType.Party, "ぷりん", "Tiamat", m4, false);
         TranslationLog.Complete(e4, Outcome(m4.Text, m4.AutoTranslateTexts, InboundOutcomeKind.Skipped, [], new InboundResponse { Status = "skip", Lang = "ja", Translation = "" }));
 
+        // The same samples as bubbles, for members currently in the party (if any)
+        foreach (var name in PartyList.Select(m => m.Name.TextValue).Where(n => !string.IsNullOrEmpty(n)).Take(3))
+            Bubbles.Add(name, [new DisplaySegment(Loc.Localize("BubbleSample", "This is a sample translation bubble."), SegmentKind.Translated)], DateTimeOffset.Now);
+
         logWindow.IsOpen = true;
     }
 
@@ -453,6 +470,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(SendCommandName);
         ChatGui.ChatMessage -= OnChatMessage;
+        Framework.Update -= OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= OpenMainUi;
