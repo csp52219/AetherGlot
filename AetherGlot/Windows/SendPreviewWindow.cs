@@ -310,18 +310,20 @@ public sealed class SendPreviewWindow : Window, IDisposable, IRelocalizable
         }
         ImGui.SameLine();
         var canSendOriginal = !string.IsNullOrWhiteSpace(input);
-        if (!canSendOriginal) ImGui.BeginDisabled();
+        var disabled1 = !canSendOriginal;
+        if (disabled1) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("SendPreviewSendOriginalBtn", "Send original")))
             Send(input);
-        if (!canSendOriginal) ImGui.EndDisabled();
+        if (disabled1) ImGui.EndDisabled();
 
         ImGui.SameLine();
-        if (!canSend) ImGui.BeginDisabled();
+        var disabled2 = !canSend;
+        if (disabled2) ImGui.BeginDisabled();
         ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent);
         ImGui.PushStyleColor(ImGuiCol.Text, Theme.AccentText);
         var sendClicked = ImGui.Button(Loc.Localize("SendPreviewSendBtn", "Send translation (Enter)"));
         ImGui.PopStyleColor(2);
-        if (!canSend) ImGui.EndDisabled();
+        if (disabled2) ImGui.EndDisabled();
 
         if (sendClicked)
         {

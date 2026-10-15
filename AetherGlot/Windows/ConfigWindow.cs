@@ -298,7 +298,8 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         Section(Loc.Localize("ModelsSection", "Models"));
         if (c.Mode != ConnectionMode.Direct)
         {
-            if (fetchingModels) ImGui.BeginDisabled();
+            var disabled1 = fetchingModels;
+            if (disabled1) ImGui.BeginDisabled();
             if (ImGui.SmallButton(c.Mode == ConnectionMode.LiteLlm
                     ? Loc.Localize("FetchModelsLiteLlm", "Fetch list from LiteLLM")
                     : Loc.Localize("FetchModelsBtn", "Fetch model list")))
@@ -316,7 +317,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
                     finally { fetchingModels = false; }
                 });
             }
-            if (fetchingModels) ImGui.EndDisabled();
+            if (disabled1) ImGui.EndDisabled();
             ImGui.SameLine();
             if (fetchedModels.Count > 0) ImGui.TextColored(Theme.TextMuted, string.Format(Loc.Localize("ModelsCount", "{0} models"), fetchedModels.Count));
             else if (fetchError is { } err) ImGui.TextColored(Theme.Warn, err);
@@ -355,7 +356,8 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         ImGui.TextUnformatted(Loc.Localize("TestTitle", "Connection test"));
         ImGui.SameLine();
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 60));
-        if (testRunning) ImGui.BeginDisabled();
+        var disabled2 = testRunning;
+        if (disabled2) ImGui.BeginDisabled();
         if (AccentButton(testRunning ? "…" : Loc.Localize("RunTestBtn", "Run")))
         {
             SaveSecrets();
@@ -366,7 +368,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
                 finally { testRunning = false; }
             });
         }
-        if (testRunning) ImGui.EndDisabled();
+        if (disabled2) ImGui.EndDisabled();
         ImGui.Separator();
 
         var steps = lastReport?.Steps;
@@ -503,7 +505,8 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         ImGui.TextUnformatted($"{plugin.Glossary.Pending.Items.Count:N0}");
 
         ImGui.Spacing();
-        if (reloadingGlossary) ImGui.BeginDisabled();
+        var disabled3 = reloadingGlossary;
+        if (disabled3) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("DictUpdateNow", "Update now")))
         {
             reloadingGlossary = true;
@@ -513,7 +516,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
                 finally { reloadingGlossary = false; }
             });
         }
-        if (reloadingGlossary) ImGui.EndDisabled();
+        if (disabled3) ImGui.EndDisabled();
 
         ImGui.SameLine();
         if (ImGui.Button(Loc.Localize("DictOpenWindow", "Open dictionary")))

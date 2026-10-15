@@ -323,10 +323,11 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         var label = Loc.Localize("LogInspectLatest", "Inspect latest");
         ImGui.SameLine();
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(label).X - 12));
-        if (!entries.Any(e => e.Outcome is not null)) ImGui.BeginDisabled();
+        var disabled1 = !entries.Any(e => e.Outcome is not null);
+        if (disabled1) ImGui.BeginDisabled();
         if (ImGui.SmallButton(label))
             plugin.InspectLatest();
-        if (!entries.Any(e => e.Outcome is not null)) ImGui.EndDisabled();
+        if (disabled1) ImGui.EndDisabled();
     }
 
     // ── Add to dictionary ───────────────────────────────────────────────
@@ -347,13 +348,14 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
 
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
-        if (!canSave) ImGui.BeginDisabled();
+        var disabled2 = !canSave;
+        if (disabled2) ImGui.BeginDisabled();
         if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
-        if (!canSave) ImGui.EndDisabled();
+        if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
         if (ImGui.Button(Loc.Localize("AddDictCancel", "Cancel")))
             ImGui.CloseCurrentPopup();
