@@ -1,17 +1,27 @@
+using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
+
 namespace AetherGlot.Helpers;
 
 /// <summary>
-/// Sends messages via the in-game chat box.
-/// Uses <c>UIModule.ProcessChatBoxEntry</c> (FFXIVClientStructs) marshalled to the
-/// game's framework thread via <see cref="IFramework"/>.
+/// Sends messages through the game's chat box (<c>UIModule.ProcessChatBoxEntry</c>), always on
+/// the framework thread. The text is cleaned first (no control characters, at most 500 bytes)
+/// and sanitised by the game so it cannot carry payloads or run a different command.
 /// </summary>
-public sealed class DalamudChatSender : IChatSender
+public sealed unsafe class DalamudChatSender : IChatSender
 {
-    [PluginService] private static IFramework Framework { get; set; } = null!;
+    // Letters, numbers, symbols and CJK, but no payloads (links, auto-translate bytes, ...)
+    private const AllowedEntities Allowed =
+        AllowedEntities.UppercaseLetters | AllowedEntities.LowercaseLetters | AllowedEntities.Numbers |
+        AllowedEntities.SpecialCharacters | AllowedEntities.CharacterList | AllowedEntities.OtherCharacters |
+        AllowedEntities.CJK;
 
+    private readonly IFramework framework;
     private readonly IPluginLog log;
 
-    // Channel-to-command mapping (all channels supported by EnabledChannels)
+    // Channel-to-command mapping (all channels supported by the send window).
+    // Only TextCommand.Command / ShortCommand values are used: those exist in every client
+    // language (EN/JA/DE/FR), unlike the localized aliases (e.g. "/n" and "/novice" are EN/FR only).
     private static readonly Dictionary<XivChatType, string> ChannelCommands = new()
     {
         [XivChatType.Say]             = "/s",
@@ -20,6 +30,7 @@ public sealed class DalamudChatSender : IChatSender
         [XivChatType.Party]           = "/p",
         [XivChatType.Alliance]        = "/a",
         [XivChatType.FreeCompany]     = "/fc",
+        [XivChatType.NoviceNetwork]   = "/beginner",
         [XivChatType.Ls1]             = "/l1",
         [XivChatType.Ls2]             = "/l2",
         [XivChatType.Ls3]             = "/l3",
@@ -38,23 +49,50 @@ public sealed class DalamudChatSender : IChatSender
         [XivChatType.CrossLinkShell8] = "/cwl8",
     };
 
-    public DalamudChatSender(IPluginLog log) => this.log = log;
+    public DalamudChatSender(IFramework framework, IPluginLog log)
+    {
+        this.framework = framework;
+        this.log       = log;
+    }
+
+    public static bool Supports(XivChatType channel) => ChannelCommands.ContainsKey(channel);
 
     public void SendMessage(XivChatType channel, string text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return;
-
         if (!ChannelCommands.TryGetValue(channel, out var cmd))
         {
             log.Warning("[AetherGlot] Unsupported outbound channel: {Channel}", channel);
             return;
         }
 
-        var fullMessage = $"{cmd} {text}";
+        var (clean, truncated) = ChatText.Sanitize(text);
+        if (clean.Length == 0) return;
+        if (truncated)
+            log.Information("[AetherGlot] Message was longer than {Max} bytes and was shortened.", ChatText.MaxBytes);
 
-        // TODO: Implement via FFXIVClientStructs UIModule.ProcessChatBoxEntry.
-        // Requires marshalling to framework thread with IFramework.RunOnFrameworkThread.
-        // Left as stub until FFXIVClientStructs unsafe API is wired up.
-        log.Warning("[AetherGlot] SendMessage stub — would send: {Message}", fullMessage);
+        var line = $"{cmd} {clean}";
+        _ = framework.RunOnFrameworkThread(() => Send(line));
+    }
+
+    // Framework thread only
+    private void Send(string line)
+    {
+        var uiModule = UIModule.Instance();
+        if (uiModule == null)
+        {
+            log.Warning("[AetherGlot] Chat is not available right now; message not sent.");
+            return;
+        }
+
+        var str = Utf8String.FromString(line);
+        try
+        {
+            str->SanitizeString(Allowed, null);
+            uiModule->ProcessChatBoxEntry(str, nint.Zero, false);
+        }
+        finally
+        {
+            str->Dtor(true);
+        }
     }
 }

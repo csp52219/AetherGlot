@@ -108,7 +108,7 @@ public sealed class Plugin : IDalamudPlugin
         Bubbles        = new BubbleBoard(() => Configuration.Display.Bubble);
 
         var translationCtx = new TranslationContext();
-        var chatSender     = new DalamudChatSender(Log);
+        var chatSender     = new DalamudChatSender(Framework, Log);
 
         translationService = new ChatTranslationService(
             Configuration, Pipeline, translationCtx, BuildConnectionSettings,

@@ -66,6 +66,9 @@ public sealed class GlossaryService
         GlossaryIndex.Build([], "en"), GlossaryIndex.Build([], "ja"), [], GlossaryStats.Empty);
 
     public GlossaryStats Stats => snapshot.Stats;
+
+    /// <summary>Incremented on every rebuild (UI caches compare it).</summary>
+    public int Version { get; private set; }
     public IReadOnlyList<TermEntry> AllEntries => snapshot.All;
 
     /// <summary>Raised after every rebuild (on the rebuilding thread).</summary>
@@ -76,6 +79,7 @@ public sealed class GlossaryService
         // Order matters only within a source (first wins); between sources GlossaryIndex.Wins decides
         var all = user.Concat(gameData).Concat(community).ToList();
         snapshot = new Snapshot(GlossaryIndex.Build(all, "en"), GlossaryIndex.Build(all, "ja"), all, stats);
+        Version++;
         Rebuilt?.Invoke();
     }
 
