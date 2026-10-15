@@ -1403,8 +1403,16 @@
     "Message": "Term chips",
     "Description": ""
   },
+  "LogClear": {
+    "Message": "Clear",
+    "Description": ""
+  },
   "LogSettingsBtn": {
     "Message": "Settings",
+    "Description": ""
+  },
+  "LogClearTip": {
+    "Message": "Hold Shift and click to clear the translation log. Cached translations are kept.",
     "Description": ""
   },
   "LogNotTranslated": {

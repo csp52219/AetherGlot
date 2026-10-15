@@ -14,6 +14,7 @@ public sealed class TranslationPipeline : ITranslationPipeline
     private readonly IPromptBuilder promptBuilder;
     private readonly IModelCapabilityStore capabilities;
     private readonly TranslationCache<InboundOutcome> cache;
+    private readonly StringPool systemPrompts = new();
 
     public TranslationPipeline(
         ITranslatorProviderFactory providerFactory,
@@ -38,7 +39,7 @@ public sealed class TranslationPipeline : ITranslationPipeline
         if (!bypassCache && cache.TryGet(cacheKey, out var cached))
             return cached.AsCached();
 
-        var system   = promptBuilder.BuildInboundSystemPrompt(request);
+        var system   = systemPrompts.Share(promptBuilder.BuildInboundSystemPrompt(request));
         var user     = promptBuilder.BuildInboundUserPrompt(request);
         var attempts = new List<AttemptRecord>();
 
@@ -136,7 +137,7 @@ public sealed class TranslationPipeline : ITranslationPipeline
         CancellationToken ct = default)
     {
         var model    = connection.OutboundModel;
-        var system   = promptBuilder.BuildOutboundSystemPrompt(request, options.OutboundMaxChars);
+        var system   = systemPrompts.Share(promptBuilder.BuildOutboundSystemPrompt(request, options.OutboundMaxChars));
         var user     = promptBuilder.BuildOutboundUserPrompt(request);
         var attempts = new List<AttemptRecord>();
 

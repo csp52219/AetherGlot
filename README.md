@@ -182,7 +182,10 @@ translation). Click a line to see the original, term chips (e.g. `bio → トイ
 alternatives), unresolved words with an *Add to dictionary* button, and *Reply*.
 Auto-translate phrases are green with 【】; unresolved words keep the original text with a dashed
 underline. Auto-scroll pauses while you scroll up and an "N new" button jumps back. Filters:
-party only / all / to me; messages that mention your name, job or role are highlighted. The
+party only / all / to me; messages that mention your name, job or role are highlighted. *Clear*
+(Shift+click) empties the log; cached translations are kept. The log keeps at most 500 entries by
+default (oldest are dropped), so memory stays bounded (roughly 5–12 MB in the worst case,
+including the translation cache). The
 footer shows the connection state, inbound model, dictionary version and size, and the average
 response time.
 

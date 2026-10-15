@@ -1403,8 +1403,16 @@
     "Message": "Begriffs-Chips",
     "Description": ""
   },
+  "LogClear": {
+    "Message": "Leeren",
+    "Description": ""
+  },
   "LogSettingsBtn": {
     "Message": "Einstellungen",
+    "Description": ""
+  },
+  "LogClearTip": {
+    "Message": "Zum Leeren des Übersetzungsprotokolls Umschalt gedrückt halten und klicken. Zwischengespeicherte Übersetzungen bleiben erhalten.",
     "Description": ""
   },
   "LogNotTranslated": {

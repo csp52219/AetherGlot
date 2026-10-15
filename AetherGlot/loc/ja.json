@@ -1403,8 +1403,16 @@
     "Message": "用語チップ",
     "Description": ""
   },
+  "LogClear": {
+    "Message": "クリア",
+    "Description": ""
+  },
   "LogSettingsBtn": {
     "Message": "設定",
+    "Description": ""
+  },
+  "LogClearTip": {
+    "Message": "Shift を押しながらクリックすると翻訳ログを消去します。翻訳のキャッシュは残ります。",
     "Description": ""
   },
   "LogNotTranslated": {

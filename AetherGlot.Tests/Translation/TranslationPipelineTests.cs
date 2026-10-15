@@ -27,6 +27,19 @@ public sealed class TranslationPipelineTests
     }
 
     [Fact]
+    public async Task Outcomes_ShareTheSystemPromptInstance()
+    {
+        var (pipe, _, _) = TestSettings.Pipeline((_, _) => FakeHttpHandler.Completion(
+            """{"status":"ok","lang":"en","translation":"やあ","terms":[],"unresolved":[],"senses":[]}"""));
+
+        var a = await pipe.TranslateInboundAsync(TestSettings.Inbound("hi there"), TestSettings.LiteLlm(), Options);
+        var b = await pipe.TranslateInboundAsync(TestSettings.Inbound("hello again"), TestSettings.LiteLlm(), Options);
+
+        Assert.False(b.FromCache);
+        Assert.Same(a.SystemPrompt, b.SystemPrompt);
+    }
+
+    [Fact]
     public async Task Unresolved_IsFilledBackWithOriginal()
     {
         var (pipe, _, _) = TestSettings.Pipeline((_, _) => FakeHttpHandler.Completion(

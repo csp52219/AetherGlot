@@ -22,14 +22,14 @@ internal static class ConfigurationMigrator
             try
             {
                 var moved = LegacySecretsMigrator.Migrate(keys, secrets);
-                log.Information("[AetherGlot] Moved {Count} API key(s) from Configuration.json to Windows Credential Manager.", moved);
+                log.Information("Moved {Count} API key(s) from Configuration.json to Windows Credential Manager.", moved);
                 if (keys.Count > 0)
-                    log.Warning("[AetherGlot] {Count} API key(s) could not be stored in Credential Manager and remain in Configuration.json.", keys.Count);
+                    log.Warning("{Count} API key(s) could not be stored in Credential Manager and remain in Configuration.json.", keys.Count);
             }
             catch (Exception ex)
             {
                 // Never log the exception message: it could in theory echo the value
-                log.Error("[AetherGlot] Could not move API keys to Credential Manager ({Type}). They remain in Configuration.json.", ex.GetType().Name);
+                log.Error("Could not move API keys to Credential Manager ({Type}). They remain in Configuration.json.", ex.GetType().Name);
             }
             changed = true;
         }

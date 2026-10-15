@@ -58,13 +58,13 @@ internal sealed class GlossaryManager : IDisposable
             await Task.Run(() =>
             {
                 try { User.Load(); }
-                catch (Exception ex) { log.Warning("[AetherGlot] Could not read {File} ({Type}).", UserFileName, ex.GetType().Name); }
+                catch (Exception ex) { log.Warning("Could not read {File} ({Type}).", UserFileName, ex.GetType().Name); }
                 Pending.Load();
 
                 if (config.Translation.UseGameData && gameData is null)
                 {
                     gameData = GameDataGlossaryLoader.Load(dataManager, log);
-                    log.Information("[AetherGlot] Game data glossary: {Terms} terms, {Phrases} auto-translate phrases.",
+                    log.Information("Game data glossary: {Terms} terms, {Phrases} auto-translate phrases.",
                                     gameData.Terms.Count, gameData.Catalog.Entries.Count);
                 }
             }, ct).ConfigureAwait(false);
@@ -73,7 +73,9 @@ internal sealed class GlossaryManager : IDisposable
             community = await communityClient.LoadAsync(
                 config.Translation.CommunityGlossaryUrl, configDirectory, bundledPath, connection(), download, ct).ConfigureAwait(false);
             if (community.Error is not null)
-                log.Warning("[AetherGlot] Community dictionary: {Error} (using {Origin}).", community.Error, community.Origin);
+                log.Warning("Community dictionary: {Error} (using {Origin}).", community.Error, community.Origin);
+            log.Information("Community dictionary: {Count} entries, version {Version}, from {Origin}.",
+                            community.Entries.Count, community.Parsed?.Version ?? "-", community.Origin);
 
             Rebuild();
         }
@@ -83,7 +85,7 @@ internal sealed class GlossaryManager : IDisposable
         }
         catch (Exception ex)
         {
-            log.Error("[AetherGlot] Glossary reload failed ({Type}).", ex.GetType().Name);
+            log.Error("Glossary reload failed ({Type}).", ex.GetType().Name);
         }
         finally
         {
