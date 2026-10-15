@@ -40,6 +40,14 @@ internal static class ConfigurationMigrator
             changed = true;
         }
 
+        // Older builds let the loader append saved channels to the defaults (duplicates)
+        var distinct = config.EnabledChannels.Distinct().ToList();
+        if (distinct.Count != config.EnabledChannels.Count)
+        {
+            config.EnabledChannels = distinct;
+            changed = true;
+        }
+
         if (config.Version < Configuration.CurrentVersion)
         {
             config.Version = Configuration.CurrentVersion;

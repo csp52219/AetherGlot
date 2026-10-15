@@ -1,4 +1,5 @@
 using Dalamud.Configuration;
+using Newtonsoft.Json;
 
 namespace AetherGlot;
 
@@ -16,6 +17,9 @@ public sealed class Configuration : IPluginConfiguration
     // --- Translation behaviour ---
     public TranslationConfig Translation { get; set; } = new();
 
+    // --- Where translations are shown ---
+    public DisplayConfig Display { get; set; } = new();
+
     public bool InboundEnabled { get; set; } = true;
     public bool OutboundEnabled { get; set; } = false;
 
@@ -26,7 +30,9 @@ public sealed class Configuration : IPluginConfiguration
     // When true, they are still sent to the model (it answers "skip" and nothing is shown).
     public bool AlwaysTranslate { get; set; } = false;
 
-    // Use List instead of HashSet for JSON-serialisation compatibility
+    // Use List instead of HashSet for JSON-serialisation compatibility.
+    // Replace: Dalamud's loader would otherwise append the saved list to these defaults.
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<XivChatType> EnabledChannels { get; set; } =
     [
         XivChatType.Say,
@@ -35,6 +41,7 @@ public sealed class Configuration : IPluginConfiguration
         XivChatType.Party,
         XivChatType.Alliance,
         XivChatType.FreeCompany,
+        XivChatType.TellIncoming,
     ];
 
     // --- Outbound prompt ---

@@ -55,6 +55,7 @@ This URL is **permanent** — it always points to the latest release.
 | Action | How |
 |---|---|
 | Open settings | `/aetherglot` or Dalamud's ⚙ → *AetherGlot Settings* |
+| Open the translation log | `/aetherglot log` or Dalamud's main UI button |
 | Configure connection | Choose Direct / LiteLLM / OpenAI-compatible, enter the URL, key and models |
 | Test the connection | `/aetherglot test` |
 | Enable translation | Check *Enable inbound translation* (and/or outbound) |
@@ -140,6 +141,28 @@ Parts it cannot translate go into `unresolved` and are shown in the original lan
 A response is discarded and the original message is shown when the JSON is invalid twice (one retry), when it does not match the schema,
 when the "translation" is a refusal/apology or far longer than the source, or when placeholders were dropped.
 Identical messages are served from a size-limited cache.
+
+---
+
+## Translation log and display
+
+**Translation log window** (`/aetherglot log`): one line per message (time, channel, sender,
+translation). Click a line to see the original, term chips (e.g. `bio → トイレ（離席） 92%` with
+alternatives), unresolved words with an *Add to dictionary* button, and *Reply*.
+Auto-translate phrases are green with 【】; unresolved words keep the original text with a dashed
+underline. Auto-scroll pauses while you scroll up and an "N new" button jumps back. Filters:
+party only / all / to me; messages that mention your name, job or role are highlighted. The
+footer shows the connection state, inbound model, dictionary version and size, and the average
+response time.
+
+**Settings** have six tabs: General, Connection (with the staged connection test), AI & translation,
+Channels (which channels are translated), Dictionary, and Display.
+
+**Display tab**: presets (Recommended / Window only / Game chat only / Bubbles only) and a table of
+channel × destination (bubble, translation log, game chat) with an *in combat* column per channel
+(all / to me only / stop). Editing the table switches the preset to *Custom*.
+Recommended: party → bubble + log; FC and Tell → log + game chat; others → log.
+*Test display* adds sample messages to the log without calling the model.
 
 ---
 

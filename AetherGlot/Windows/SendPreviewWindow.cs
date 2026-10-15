@@ -94,13 +94,24 @@ public sealed class SendPreviewWindow : Window, IDisposable
         StartTranslation();
     }
 
+    /// <summary>Opens the window with an empty input for replying on <paramref name="channel"/>.</summary>
+    public void OpenForReply(XivChatType channel)
+    {
+        cts?.Cancel();
+        originalText    = string.Empty;
+        selectedChannel = channel;
+        state           = new PreviewState(false, null, null);
+        IsOpen          = true;
+    }
+
     public override void Draw()
     {
         var s = state;
 
         ImGui.TextUnformatted(Loc.Localize("SendPreviewOriginal", "Original:"));
-        ImGui.SameLine();
-        ImGui.TextWrapped(originalText);
+        ImGui.InputTextMultiline("##source", ref originalText, 500, new Vector2(-1, 48));
+        if (ImGui.Button(Loc.Localize("SendPreviewTranslateBtn", "Translate")) && !string.IsNullOrWhiteSpace(originalText))
+            StartTranslation();
         ImGui.Separator();
 
         ImGui.TextUnformatted(Loc.Localize("SendPreviewTranslation", "Translation:"));
