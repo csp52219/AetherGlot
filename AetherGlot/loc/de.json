@@ -1,30 +1,638 @@
 {
-  "ConfigWindowTitle": {
-    "Message": "AetherGlot Einstellungen",
-    "Description": ""
-  },
   "CommandHelp": {
-    "Message": "AetherGlot-Einstellungen öffnen",
+    "Message": "AetherGlot-Einstellungen öffnen. Unterbefehle: log (Übersetzungsprotokoll), dict [Text] (Wörterbuch), at (Auto-Übersetzungsliste), inspect (letzte Übersetzung prüfen), test (Verbindungstest), models (Modellliste), reload (Wörterbücher neu laden), lookup <Text> (Wörterbuchtreffer anzeigen).",
     "Description": ""
   },
-  "ProviderSection": {
-    "Message": "Anbieter-Einstellungen",
+  "SendCommandHelp": {
+    "Message": "Übersetzen und senden: /agsend [Kanal] <Text>",
+    "Description": ""
+  },
+  "InspectNothing": {
+    "Message": "Noch nichts zu prüfen: keine übersetzte Nachricht im Protokoll.",
+    "Description": ""
+  },
+  "GlossaryReloading": {
+    "Message": "Wörterbücher werden neu geladen …",
+    "Description": ""
+  },
+  "GlossaryReloaded": {
+    "Message": "Mein Wörterbuch {0} · Spieldaten {1} · Community {2} (v{3}, {4}) · Auto-Übersetzung {5}",
+    "Description": ""
+  },
+  "GlossaryCommunityError": {
+    "Message": "Community-Wörterbuch: {0}",
+    "Description": ""
+  },
+  "LookupJaEnOnly": {
+    "Message": "Die Wörterbuchsuche unterstützt nur Japanisch ⇔ Englisch.",
+    "Description": ""
+  },
+  "LookupNoHits": {
+    "Message": "Keine Wörterbuchtreffer.",
+    "Description": ""
+  },
+  "TestStarted": {
+    "Message": "Verbindungstest läuft …",
+    "Description": ""
+  },
+  "TestPassed": {
+    "Message": "Verbindungstest erfolgreich.",
+    "Description": ""
+  },
+  "TestFailed": {
+    "Message": "Verbindungstest fehlgeschlagen.",
+    "Description": ""
+  },
+  "SecretsNotice": {
+    "Message": "Schlüssel und Geheimnisse werden in der Windows-Anmeldeinformationsverwaltung gespeichert, nicht in der Konfigurationsdatei.",
+    "Description": ""
+  },
+  "StepAccess": {
+    "Message": "Cloudflare Access",
+    "Description": ""
+  },
+  "StepAuth": {
+    "Message": "LiteLLM-Authentifizierung",
+    "Description": ""
+  },
+  "StepModels": {
+    "Message": "Modellliste",
+    "Description": ""
+  },
+  "StepJsonInbound": {
+    "Message": "JSON-Antwort (Modell für Empfang)",
+    "Description": ""
+  },
+  "StepJsonOutbound": {
+    "Message": "JSON-Antwort (Modell für Senden)",
+    "Description": ""
+  },
+  "ModelsUnsupported": {
+    "Message": "Die Modellliste ist nur über LiteLLM / OpenAI-kompatibel verfügbar.",
+    "Description": ""
+  },
+  "ModelsListed": {
+    "Message": "{0} Modelle: {1}",
+    "Description": ""
+  },
+  "SendCommandUsage": {
+    "Message": "[AetherGlot] Verwendung: /agsend [Kanal] <Text>\nKanäle: s sh y p a fc nn l1-l8 cw1-cw8",
+    "Description": ""
+  },
+  "OutboundDisabled": {
+    "Message": "[AetherGlot] Die Übersetzung beim Senden ist deaktiviert.",
+    "Description": ""
+  },
+  "BubbleSample": {
+    "Message": "Dies ist eine Beispiel-Übersetzungsblase.",
+    "Description": ""
+  },
+  "BubblePinned": {
+    "Message": "angeheftet · Klicken zum Lösen",
+    "Description": ""
+  },
+  "HistoryTitle": {
+    "Message": "Letzte Übersetzungen",
+    "Description": ""
+  },
+  "HistoryOpenLog": {
+    "Message": "Übersetzungsprotokoll öffnen",
+    "Description": ""
+  },
+  "ChParty": {
+    "Message": "Gruppe",
+    "Description": ""
+  },
+  "ChAlliance": {
+    "Message": "Allianz",
+    "Description": ""
+  },
+  "ChSay": {
+    "Message": "Sagen",
+    "Description": ""
+  },
+  "ChShout": {
+    "Message": "Schreien",
+    "Description": ""
+  },
+  "ChYell": {
+    "Message": "Rufen",
+    "Description": ""
+  },
+  "ChFc": {
+    "Message": "FG",
+    "Description": ""
+  },
+  "ChLs": {
+    "Message": "Kontaktkreis 1–8",
+    "Description": ""
+  },
+  "ChCwls": {
+    "Message": "Welten-KK 1–8",
+    "Description": ""
+  },
+  "ChTell": {
+    "Message": "Flüstern",
+    "Description": ""
+  },
+  "ChNn": {
+    "Message": "Neulinge",
+    "Description": ""
+  },
+  "AtLoading": {
+    "Message": "Spieldaten werden gelesen …",
+    "Description": ""
+  },
+  "AtEmpty": {
+    "Message": "Keine Auto-Übersetzungsdaten. Aktiviere „Spieldaten verwenden“ in den Wörterbuch-Einstellungen.",
+    "Description": ""
+  },
+  "AtFlow": {
+    "Message": "So wird ein Ausdruck verarbeitet",
+    "Description": ""
+  },
+  "AtFlowReceived": {
+    "Message": "Empfangen (Payload-IDs)",
+    "Description": ""
+  },
+  "AtFlowSent": {
+    "Message": "An das Modell gesendet",
+    "Description": ""
+  },
+  "AtFlowShown": {
+    "Message": "Angezeigt (Ausdruck wieder eingesetzt)",
+    "Description": ""
+  },
+  "AtFlowExample": {
+    "Message": "(Beispiel – hier erscheint der zuletzt empfangene Ausdruck)",
+    "Description": ""
+  },
+  "AtAll": {
+    "Message": "Alle",
+    "Description": ""
+  },
+  "AtSearch": {
+    "Message": "Japanisch, Englisch oder ID (Gruppe:Schlüssel) suchen",
+    "Description": ""
+  },
+  "AtRecentOnly": {
+    "Message": "Nur im Chat gesehene ({0})",
+    "Description": ""
+  },
+  "AtResults": {
+    "Message": "{0:N0} Ausdrücke · nur lesen",
+    "Description": ""
+  },
+  "GlossaryColJa": {
+    "Message": "Japanisch",
+    "Description": ""
+  },
+  "AtUsage": {
+    "Message": "Verwendet für",
+    "Description": ""
+  },
+  "AtUsageJob": {
+    "Message": "Empfang: fest · Senden: Ersetzungskandidat",
+    "Description": ""
+  },
+  "AtUsageAction": {
+    "Message": "Erkennt auch getippte Aktionsnamen",
+    "Description": ""
+  },
+  "AtUsagePlace": {
+    "Message": "Auch als Kontexthinweis verwendet",
+    "Description": ""
+  },
+  "AtUsageDisplay": {
+    "Message": "Empfang: unverändert angezeigt",
+    "Description": ""
+  },
+  "AtTitle": {
+    "Message": "AetherGlot — Auto-Übersetzung",
+    "Description": ""
+  },
+  "TabGeneral": {
+    "Message": "Allgemein",
+    "Description": ""
+  },
+  "TabConnection": {
+    "Message": "Verbindung",
+    "Description": ""
+  },
+  "TabAi": {
+    "Message": "KI & Übersetzung",
+    "Description": ""
+  },
+  "TabChannels": {
+    "Message": "Kanäle",
+    "Description": ""
+  },
+  "TabDictionary": {
+    "Message": "Wörterbuch",
+    "Description": ""
+  },
+  "TabDisplay": {
+    "Message": "Anzeige",
+    "Description": ""
+  },
+  "SecretsFooter": {
+    "Message": "Schlüssel und Geheimnisse werden in der Windows-Anmeldeinformationsverwaltung gespeichert, nicht in der Einstellungsdatei.",
+    "Description": ""
+  },
+  "SaveBtn": {
+    "Message": "Speichern",
+    "Description": ""
+  },
+  "InboundLabel": {
+    "Message": "Empfangene Nachrichten übersetzen",
+    "Description": ""
+  },
+  "OutboundLabel": {
+    "Message": "/agsend aktivieren (vor dem Senden übersetzen)",
+    "Description": ""
+  },
+  "SkipOwnLabel": {
+    "Message": "Eigene Nachrichten überspringen",
+    "Description": ""
+  },
+  "OpenLogBtn": {
+    "Message": "Übersetzungsprotokoll öffnen",
+    "Description": ""
+  },
+  "OutboundSection": {
+    "Message": "Senden (/agsend)",
+    "Description": ""
+  },
+  "OutboundPromptHint": {
+    "Message": "Zusätzliche Stilanweisungen für das Modell (optional), z. B. „Britische Schreibweise verwenden“. Kurz / normal / höflich wählst du im Sendefenster.",
+    "Description": ""
+  },
+  "ResetPromptBtn": {
+    "Message": "Leeren",
+    "Description": ""
+  },
+  "DefaultOutboundChannelLabel": {
+    "Message": "Standard-Sendekanal",
+    "Description": ""
+  },
+  "CommandHelpSection": {
+    "Message": "Befehle",
+    "Description": ""
+  },
+  "HelpSettings": {
+    "Message": "Einstellungen",
+    "Description": ""
+  },
+  "HelpLog": {
+    "Message": "Übersetzungsprotokoll",
+    "Description": ""
+  },
+  "HelpTest": {
+    "Message": "Verbindungstest",
+    "Description": ""
+  },
+  "HelpLookup": {
+    "Message": "Wörterbuchtreffer anzeigen",
+    "Description": ""
+  },
+  "HelpSend": {
+    "Message": "übersetzen und senden",
+    "Description": ""
+  },
+  "ModeLabel": {
+    "Message": "Verbindung",
+    "Description": ""
+  },
+  "DirectSection": {
+    "Message": "Anbieter-API",
     "Description": ""
   },
   "ProviderLabel": {
     "Message": "Anbieter",
     "Description": ""
   },
-  "ModelLabel": {
-    "Message": "Modell",
-    "Description": ""
-  },
   "EndpointLabel": {
-    "Message": "Benutzerdefinierter Endpunkt (optional)",
+    "Message": "Endpunkt",
     "Description": ""
   },
   "ApiKeyLabel": {
     "Message": "API-Schlüssel",
+    "Description": ""
+  },
+  "BaseUrlLabel": {
+    "Message": "Basis-URL",
+    "Description": ""
+  },
+  "VirtualKeyLabel": {
+    "Message": "Virtual Key",
+    "Description": ""
+  },
+  "UserTagLabel": {
+    "Message": "Benutzer-Tag",
+    "Description": ""
+  },
+  "ModeOpenAICompatible": {
+    "Message": "OpenAI-kompatibel",
+    "Description": ""
+  },
+  "ApiKeyOptionalLabel": {
+    "Message": "API-Schlüssel (optional)",
+    "Description": ""
+  },
+  "CfSection": {
+    "Message": "Cloudflare Access (Service-Token)",
+    "Description": ""
+  },
+  "CfEnabledLabel": {
+    "Message": "Verwenden",
+    "Description": ""
+  },
+  "CfHeadersLabel": {
+    "Message": "Gesendete Header",
+    "Description": ""
+  },
+  "ExtraHeadersLabel": {
+    "Message": "Zusätzliche Header",
+    "Description": ""
+  },
+  "AddHeaderBtn": {
+    "Message": "+ Header hinzufügen",
+    "Description": ""
+  },
+  "HeaderName": {
+    "Message": "Name",
+    "Description": ""
+  },
+  "HeaderValue": {
+    "Message": "Wert",
+    "Description": ""
+  },
+  "ModelsSection": {
+    "Message": "Modelle",
+    "Description": ""
+  },
+  "FetchModelsLiteLlm": {
+    "Message": "Liste von LiteLLM abrufen",
+    "Description": ""
+  },
+  "FetchModelsBtn": {
+    "Message": "Modellliste abrufen",
+    "Description": ""
+  },
+  "FetchModelsEmpty": {
+    "Message": "Keine Modelle erhalten. Details liefert der Verbindungstest.",
+    "Description": ""
+  },
+  "ModelsCount": {
+    "Message": "{0} Modelle",
+    "Description": ""
+  },
+  "InboundModelLabel": {
+    "Message": "Empfang (schnell)",
+    "Description": ""
+  },
+  "OutboundModelLabel": {
+    "Message": "Senden (Qualität)",
+    "Description": ""
+  },
+  "JsonModeLabel": {
+    "Message": "JSON-Format anfordern (Modelle, die es ablehnen, werden per Prompt angewiesen)",
+    "Description": ""
+  },
+  "TestTitle": {
+    "Message": "Verbindungstest",
+    "Description": ""
+  },
+  "RunTestBtn": {
+    "Message": "Ausführen",
+    "Description": ""
+  },
+  "TestHowToRead": {
+    "Message": "Fehler deuten",
+    "Description": ""
+  },
+  "TestHint302": {
+    "Message": "302 / 403: Prüfe, ob die Cloudflare-Access-Richtlinie Service Auth verwendet.",
+    "Description": ""
+  },
+  "TestHint401": {
+    "Message": "401: Der LiteLLM-Virtual-Key ist ungültig oder abgelaufen.",
+    "Description": ""
+  },
+  "TestHintModel": {
+    "Message": "Modell nicht gefunden: Prüfe, ob der Virtual Key dieses Modell nutzen darf.",
+    "Description": ""
+  },
+  "ChangeInConnectionTab": {
+    "Message": "Im Tab „Verbindung“ ändern",
+    "Description": ""
+  },
+  "UnresolvedSection": {
+    "Message": "Wenn einige Wörter nicht übersetzt werden können",
+    "Description": ""
+  },
+  "UnresolvedPartial": {
+    "Message": "Übersetzbares übersetzen, den Rest im Original markieren (empfohlen)",
+    "Description": ""
+  },
+  "UnresolvedOriginal": {
+    "Message": "Nur das Original anzeigen",
+    "Description": ""
+  },
+  "UnresolvedHide": {
+    "Message": "Nichts anzeigen",
+    "Description": ""
+  },
+  "DiscardRefusals": {
+    "Message": "Ablehnungen / Entschuldigungen („kann nicht übersetzen“) verwerfen und das Original anzeigen",
+    "Description": ""
+  },
+  "FreshTermsSection": {
+    "Message": "Begriffe aktuell halten",
+    "Description": ""
+  },
+  "UseGameData": {
+    "Message": "Auto-Übersetzungen und Aktionsnamen aus den Spieldaten laden (folgt Patches)",
+    "Description": ""
+  },
+  "CommunityAutoUpdate": {
+    "Message": "Community-Wörterbuch beim Start aktualisieren",
+    "Description": ""
+  },
+  "SendContextHints": {
+    "Message": "Ort, Kampfstatus und Gruppenjobs als Hinweise senden",
+    "Description": ""
+  },
+  "CommunityUrl": {
+    "Message": "URL des Community-Wörterbuchs",
+    "Description": ""
+  },
+  "SummaryLiteLlmCf": {
+    "Message": "LiteLLM (über Cloudflare Access)",
+    "Description": ""
+  },
+  "SummaryLine": {
+    "Message": "{0} · Empfang {1} / Senden {2}",
+    "Description": ""
+  },
+  "ChannelsHelp": {
+    "Message": "Nachrichten in diesen Kanälen werden übersetzt. Wo sie angezeigt werden, legst du im Tab „Anzeige“ fest.",
+    "Description": ""
+  },
+  "DictMine": {
+    "Message": "Mein Wörterbuch",
+    "Description": ""
+  },
+  "DictGame": {
+    "Message": "Spieldaten",
+    "Description": ""
+  },
+  "DictAutoTranslate": {
+    "Message": "Auto-Übersetzung",
+    "Description": ""
+  },
+  "DictCommunity": {
+    "Message": "Community",
+    "Description": ""
+  },
+  "DictPending": {
+    "Message": "Ausstehend",
+    "Description": ""
+  },
+  "DictUpdateNow": {
+    "Message": "Jetzt aktualisieren",
+    "Description": ""
+  },
+  "DictOpenWindow": {
+    "Message": "Wörterbuch öffnen",
+    "Description": ""
+  },
+  "DictOpenAt": {
+    "Message": "Auto-Übersetzungsliste",
+    "Description": ""
+  },
+  "PresetLabel": {
+    "Message": "Voreinstellung",
+    "Description": ""
+  },
+  "PresetRecommended": {
+    "Message": "Empfohlen",
+    "Description": ""
+  },
+  "PresetWindow": {
+    "Message": "Nur Fenster",
+    "Description": ""
+  },
+  "PresetGameChat": {
+    "Message": "Nur Spielchat",
+    "Description": ""
+  },
+  "PresetBubble": {
+    "Message": "Nur Blasen",
+    "Description": ""
+  },
+  "PresetCustom": {
+    "Message": "Benutzerdefiniert",
+    "Description": ""
+  },
+  "PresetHint": {
+    "Message": "Beim Bearbeiten der Tabelle wird auf „Benutzerdefiniert“ umgestellt.",
+    "Description": ""
+  },
+  "RoutesSection": {
+    "Message": "Wo jeder Kanal angezeigt wird",
+    "Description": ""
+  },
+  "BubbleOnlyParty": {
+    "Message": "Blasen hängen an der Gruppenliste, daher nur für Gruppe und Allianz.",
+    "Description": ""
+  },
+  "TestDisplayBtn": {
+    "Message": "Anzeige testen",
+    "Description": ""
+  },
+  "TestDisplayTip": {
+    "Message": "Fügt dem Übersetzungsprotokoll Beispielnachrichten hinzu (ohne Modellaufruf).",
+    "Description": ""
+  },
+  "ColChannel": {
+    "Message": "Kanal",
+    "Description": ""
+  },
+  "ColBubble": {
+    "Message": "Blase",
+    "Description": ""
+  },
+  "ColLog": {
+    "Message": "Übersetzungsprotokoll",
+    "Description": ""
+  },
+  "ColGameChat": {
+    "Message": "Spielchat",
+    "Description": ""
+  },
+  "ColCombat": {
+    "Message": "Im Kampf",
+    "Description": ""
+  },
+  "CardBubble": {
+    "Message": "Blasen",
+    "Description": ""
+  },
+  "BubbleSeconds": {
+    "Message": "Sekunden sichtbar",
+    "Description": ""
+  },
+  "BubbleMax": {
+    "Message": "max. pro Mitglied",
+    "Description": ""
+  },
+  "BubbleExtend": {
+    "Message": "Länger bei langem Text",
+    "Description": ""
+  },
+  "BubbleHistory": {
+    "Message": "Letzte 3 unten rechts",
+    "Description": ""
+  },
+  "HotkeyLabel": {
+    "Message": "Umschalttaste",
+    "Description": ""
+  },
+  "CardLog": {
+    "Message": "Übersetzungsprotokoll",
+    "Description": ""
+  },
+  "LogOneLine": {
+    "Message": "Eine Zeile (Klick zeigt Original)",
+    "Description": ""
+  },
+  "LogPause": {
+    "Message": "Beim Hochscrollen anhalten",
+    "Description": ""
+  },
+  "LogHighlight": {
+    "Message": "Nachrichten an mich hervorheben",
+    "Description": ""
+  },
+  "CardGameChat": {
+    "Message": "Spielchat",
+    "Description": ""
+  },
+  "GameChatOutput": {
+    "Message": "Ausgabe",
+    "Description": ""
+  },
+  "GameChatPrefix": {
+    "Message": "Zeilenpräfix",
+    "Description": ""
+  },
+  "GameChatReplace": {
+    "Message": "Original durch die Übersetzung ersetzen",
+    "Description": ""
+  },
+  "GameChatReplaceTip": {
+    "Message": "Nur möglich, wenn die Übersetzung schon im Cache ist; sonst wird sie als neue Zeile ergänzt.",
     "Description": ""
   },
   "HideBtn": {
@@ -35,32 +643,16 @@
     "Message": "Anzeigen",
     "Description": ""
   },
-  "TranslationSection": {
-    "Message": "Übersetzung",
+  "ConfigWindowTitle": {
+    "Message": "AetherGlot-Einstellungen",
     "Description": ""
   },
-  "InboundLabel": {
-    "Message": "Eingehende Übersetzung aktivieren (empfangen)",
+  "ModeDirect": {
+    "Message": "Direkt (Anbieter-API)",
     "Description": ""
   },
-  "OutboundLabel": {
-    "Message": "Ausgehende Übersetzung aktivieren (senden)",
-    "Description": ""
-  },
-  "ChannelSection": {
-    "Message": "Aktivierte Chat-Kanäle",
-    "Description": ""
-  },
-  "ChannelSay": {
-    "Message": "Sagen",
-    "Description": ""
-  },
-  "ChannelShout": {
-    "Message": "Rufen",
-    "Description": ""
-  },
-  "ChannelYell": {
-    "Message": "Schreien",
+  "ModeLiteLlm": {
+    "Message": "LiteLLM-Proxy",
     "Description": ""
   },
   "ChannelParty": {
@@ -71,160 +663,748 @@
     "Message": "Allianz",
     "Description": ""
   },
+  "ChannelSay": {
+    "Message": "Sagen",
+    "Description": ""
+  },
+  "ChannelShout": {
+    "Message": "Schreien",
+    "Description": ""
+  },
+  "ChannelYell": {
+    "Message": "Rufen",
+    "Description": ""
+  },
   "ChannelFc": {
     "Message": "Freie Gesellschaft",
     "Description": ""
   },
+  "ChannelTell": {
+    "Message": "Flüstern",
+    "Description": ""
+  },
+  "ChannelNoviceNetwork": {
+    "Message": "Neulinge",
+    "Description": ""
+  },
   "ChannelLs1": {
-    "Message": "LS 1",
+    "Message": "Kontaktkreis 1",
     "Description": ""
   },
   "ChannelLs2": {
-    "Message": "LS 2",
+    "Message": "Kontaktkreis 2",
     "Description": ""
   },
   "ChannelLs3": {
-    "Message": "LS 3",
+    "Message": "Kontaktkreis 3",
     "Description": ""
   },
   "ChannelLs4": {
-    "Message": "LS 4",
+    "Message": "Kontaktkreis 4",
     "Description": ""
   },
   "ChannelLs5": {
-    "Message": "LS 5",
+    "Message": "Kontaktkreis 5",
     "Description": ""
   },
   "ChannelLs6": {
-    "Message": "LS 6",
+    "Message": "Kontaktkreis 6",
     "Description": ""
   },
   "ChannelLs7": {
-    "Message": "LS 7",
+    "Message": "Kontaktkreis 7",
     "Description": ""
   },
   "ChannelLs8": {
-    "Message": "LS 8",
+    "Message": "Kontaktkreis 8",
     "Description": ""
   },
   "ChannelCwls1": {
-    "Message": "CWLS 1",
+    "Message": "Welten-Kontaktkreis 1",
     "Description": ""
   },
   "ChannelCwls2": {
-    "Message": "CWLS 2",
+    "Message": "Welten-Kontaktkreis 2",
     "Description": ""
   },
   "ChannelCwls3": {
-    "Message": "CWLS 3",
+    "Message": "Welten-Kontaktkreis 3",
     "Description": ""
   },
   "ChannelCwls4": {
-    "Message": "CWLS 4",
+    "Message": "Welten-Kontaktkreis 4",
     "Description": ""
   },
   "ChannelCwls5": {
-    "Message": "CWLS 5",
+    "Message": "Welten-Kontaktkreis 5",
     "Description": ""
   },
   "ChannelCwls6": {
-    "Message": "CWLS 6",
+    "Message": "Welten-Kontaktkreis 6",
     "Description": ""
   },
   "ChannelCwls7": {
-    "Message": "CWLS 7",
+    "Message": "Welten-Kontaktkreis 7",
     "Description": ""
   },
   "ChannelCwls8": {
-    "Message": "CWLS 8",
+    "Message": "Welten-Kontaktkreis 8",
     "Description": ""
   },
-  "OutboundSection": {
-    "Message": "Ausgehendes Prompt (für Sende-Übersetzung)",
+  "CombatAll": {
+    "Message": "Alle",
     "Description": ""
   },
-  "ResetPromptBtn": {
-    "Message": "Auf Standard zurücksetzen",
+  "CombatMentions": {
+    "Message": "Nur an mich",
     "Description": ""
   },
-  "DefaultOutboundChannelLabel": {
-    "Message": "Standard-Sendekanal",
+  "CombatStop": {
+    "Message": "Aus",
     "Description": ""
   },
-  "SaveBtn": {
+  "OutputOriginal": {
+    "Message": "Ursprünglicher Kanal",
+    "Description": ""
+  },
+  "OutputEcho": {
+    "Message": "Echo",
+    "Description": ""
+  },
+  "GlossaryPending": {
+    "Message": "Zur Freigabe",
+    "Description": ""
+  },
+  "GlossaryUpdated": {
+    "Message": "Zuletzt aktualisiert",
+    "Description": ""
+  },
+  "GlossaryCommunity": {
+    "Message": "Community",
+    "Description": ""
+  },
+  "GlossaryGameData": {
+    "Message": "Spieldaten",
+    "Description": ""
+  },
+  "GlossaryUpdating": {
+    "Message": "Wird aktualisiert …",
+    "Description": ""
+  },
+  "GlossarySearch": {
+    "Message": "Englisch, Japanisch oder Abkürzungen suchen",
+    "Description": ""
+  },
+  "GlossaryAllKinds": {
+    "Message": "Alle Arten",
+    "Description": ""
+  },
+  "GlossaryAdd": {
+    "Message": "+ Hinzufügen",
+    "Description": ""
+  },
+  "GlossaryResults": {
+    "Message": "{0:N0} Begriffe",
+    "Description": ""
+  },
+  "GlossaryColEn": {
+    "Message": "Englisch / Abk.",
+    "Description": ""
+  },
+  "GlossaryColKind": {
+    "Message": "Art",
+    "Description": ""
+  },
+  "GlossaryColRules": {
+    "Message": "Kontext",
+    "Description": ""
+  },
+  "GlossaryColSource": {
+    "Message": "Quelle",
+    "Description": ""
+  },
+  "GlossaryRules": {
+    "Message": "{0} Bedeutungen · {1} Regeln",
+    "Description": ""
+  },
+  "GlossaryPendingHelp": {
+    "Message": "Wörter, die das Modell nicht übersetzen konnte. Trage sie ein, damit sie beim nächsten Mal übersetzt werden.",
+    "Description": ""
+  },
+  "GlossaryPendingEmpty": {
+    "Message": "Nichts ausstehend.",
+    "Description": ""
+  },
+  "GlossaryPendingWord": {
+    "Message": "Wort",
+    "Description": ""
+  },
+  "GlossaryPendingGuess": {
+    "Message": "Vermutung des Modells",
+    "Description": ""
+  },
+  "GlossaryPendingSeen": {
+    "Message": "Gesehen",
+    "Description": ""
+  },
+  "GlossaryRegister": {
+    "Message": "Eintragen",
+    "Description": ""
+  },
+  "GlossaryIgnore": {
+    "Message": "Ignorieren",
+    "Description": ""
+  },
+  "AddDictTitle": {
+    "Message": "Zu meinem Wörterbuch hinzufügen",
+    "Description": ""
+  },
+  "AddDictMeaning": {
+    "Message": "Bedeutung",
+    "Description": ""
+  },
+  "AddDictSave": {
     "Message": "Speichern",
     "Description": ""
   },
-  "SendCommandHelp": {
-    "Message": "Übersetzen und senden: /agsend [Kanal] <Text>",
+  "GlossaryEditFull": {
+    "Message": "Mit Bedeutungen bearbeiten …",
     "Description": ""
   },
-  "OutboundDisabled": {
-    "Message": "[AetherGlot] Ausgehende Übersetzung ist deaktiviert.",
+  "AddDictCancel": {
+    "Message": "Abbrechen",
     "Description": ""
   },
-  "SendCommandUsage": {
-    "Message": "[AetherGlot] Verwendung: /agsend [Kanal] <Text>\nPräfixe: s sh y p a fc nn l1-l8 cw1-cw8",
+  "GlossarySelectHint": {
+    "Message": "Wähle einen Begriff, um seine Bedeutungen zu sehen, oder füge einen eigenen hinzu.",
     "Description": ""
   },
-  "SendPreviewTitle": {
-    "Message": "AetherGlot — Sende-Vorschau",
+  "GlossaryAtId": {
+    "Message": "Auto-Übersetzung",
+    "Description": ""
+  },
+  "GlossaryPriority": {
+    "Message": "Priorität",
+    "Description": ""
+  },
+  "GlossaryInCombat": {
+    "Message": "Kampf",
+    "Description": ""
+  },
+  "GlossaryInCombatYes": {
+    "Message": "im Kampf",
+    "Description": ""
+  },
+  "GlossaryInCombatNo": {
+    "Message": "außerhalb des Kampfes",
+    "Description": ""
+  },
+  "GlossaryWords": {
+    "Message": "Begleitwörter",
+    "Description": ""
+  },
+  "GlossaryJobs": {
+    "Message": "Gruppenjobs",
+    "Description": ""
+  },
+  "GlossaryNote": {
+    "Message": "Notiz",
+    "Description": ""
+  },
+  "GlossaryOnAmbiguous": {
+    "Message": "Wenn unklar",
+    "Description": ""
+  },
+  "GlossaryCopyToMine": {
+    "Message": "In mein Wörterbuch kopieren und bearbeiten",
+    "Description": ""
+  },
+  "GlossaryPrecedence": {
+    "Message": "Mein Wörterbuch > Spieldaten > Community.",
+    "Description": ""
+  },
+  "GlossaryNewEntry": {
+    "Message": "Neuer Eintrag (Mein Wörterbuch)",
+    "Description": ""
+  },
+  "GlossaryEditEntry": {
+    "Message": "Bearbeiten (Mein Wörterbuch)",
+    "Description": ""
+  },
+  "GlossaryAliasesEn": {
+    "Message": "Englische Schreibweisen / Abkürzungen (durch Komma getrennt)",
+    "Description": ""
+  },
+  "GlossaryAliasesJa": {
+    "Message": "Japanische Schreibweisen (durch Komma getrennt)",
+    "Description": ""
+  },
+  "GlossarySense": {
+    "Message": "Bedeutung",
+    "Description": ""
+  },
+  "GlossaryRemoveSense": {
+    "Message": "Entfernen",
+    "Description": ""
+  },
+  "GlossaryPriorityTip": {
+    "Message": "Der kleinere Wert gewinnt, wenn sonst nichts entscheidet.",
+    "Description": ""
+  },
+  "GlossaryEither": {
+    "Message": "egal",
+    "Description": ""
+  },
+  "GlossaryWordsHint": {
+    "Message": "Wörter, die mit dieser Bedeutung vorkommen (brb, dot, …)",
+    "Description": ""
+  },
+  "GlossaryJobsHint": {
+    "Message": "Gruppenjobs, die darauf hindeuten (SCH, WHM, …)",
+    "Description": ""
+  },
+  "GlossaryAddSense": {
+    "Message": "+ Bedeutung hinzufügen",
+    "Description": ""
+  },
+  "GlossarySave": {
+    "Message": "Speichern",
+    "Description": ""
+  },
+  "GlossaryDelete": {
+    "Message": "Löschen",
+    "Description": ""
+  },
+  "GlossaryDeleteTip": {
+    "Message": "Zum Löschen Umschalt gedrückt halten und klicken.",
+    "Description": ""
+  },
+  "GlossaryDuplicate": {
+    "Message": "„{0}“ ist bereits in meinem Wörterbuch; bearbeite stattdessen diesen Eintrag.",
+    "Description": ""
+  },
+  "GlossarySaveFailed": {
+    "Message": "Speichern nicht möglich ({0}).",
+    "Description": ""
+  },
+  "KindAutoTranslate": {
+    "Message": "Auto-Übersetzung",
+    "Description": ""
+  },
+  "KindAction": {
+    "Message": "Aktion",
+    "Description": ""
+  },
+  "KindStatus": {
+    "Message": "Status",
+    "Description": ""
+  },
+  "KindJob": {
+    "Message": "Job",
+    "Description": ""
+  },
+  "KindContent": {
+    "Message": "Inhalt",
+    "Description": ""
+  },
+  "KindPlace": {
+    "Message": "Ort",
+    "Description": ""
+  },
+  "KindMechanic": {
+    "Message": "Mechanik",
+    "Description": ""
+  },
+  "KindSlang": {
+    "Message": "Slang",
+    "Description": ""
+  },
+  "KindAbbreviation": {
+    "Message": "Abkürzung",
+    "Description": ""
+  },
+  "KindOther": {
+    "Message": "Sonstiges",
+    "Description": ""
+  },
+  "GlossaryMine": {
+    "Message": "Mein Wörterbuch",
+    "Description": ""
+  },
+  "GlossaryAt": {
+    "Message": "Auto-Übersetzung",
+    "Description": ""
+  },
+  "GlossaryShowAll": {
+    "Message": "alle Bedeutungen zeigen",
+    "Description": ""
+  },
+  "GlossaryPreferFirst": {
+    "Message": "höchste Priorität verwenden",
+    "Description": ""
+  },
+  "GlossaryTitle": {
+    "Message": "AetherGlot — Wörterbuch",
+    "Description": ""
+  },
+  "GlossaryAll": {
+    "Message": "Alle",
+    "Description": ""
+  },
+  "GlossaryGameNames": {
+    "Message": "Namen im Spiel",
+    "Description": ""
+  },
+  "InspectorEmpty": {
+    "Message": "Noch nichts zu prüfen. Nutze „Prüfen“ bei einem Protokolleintrag.",
+    "Description": ""
+  },
+  "InspectorLatest": {
+    "Message": "Letzte Übersetzung prüfen",
+    "Description": ""
+  },
+  "InspectorInput": {
+    "Message": "Gesendete Eingabe",
+    "Description": ""
+  },
+  "InspectorHints": {
+    "Message": "Kontexthinweise",
+    "Description": ""
+  },
+  "InspectorValidation": {
+    "Message": "Validierung",
+    "Description": ""
+  },
+  "InspectorAttempts": {
+    "Message": "Modellaufrufe (roh)",
+    "Description": ""
+  },
+  "LogTranslating": {
+    "Message": "wird übersetzt …",
+    "Description": ""
+  },
+  "InspectorRetranslating": {
+    "Message": "Wird übersetzt …",
+    "Description": ""
+  },
+  "InspectorRetranslate": {
+    "Message": "Erneut übersetzen",
+    "Description": ""
+  },
+  "InspectorRetranslateTip": {
+    "Message": "Gleiche Anfrage ohne Cache. Der Protokolleintrag wird aktualisiert.",
+    "Description": ""
+  },
+  "InspectorLatestShort": {
+    "Message": "Neueste",
+    "Description": ""
+  },
+  "InspectorOutbound": {
+    "Message": "Senden (Sendevorschau)",
+    "Description": ""
+  },
+  "InspectorFailed": {
+    "Message": "fehlgeschlagen",
+    "Description": ""
+  },
+  "InspectorUnresolvedPrompt": {
+    "Message": "In keinem Wörterbuch – eintragen, damit es beim nächsten Mal übersetzt wird:",
+    "Description": ""
+  },
+  "InspectorPlaceholderized": {
+    "Message": "Text (Auto-Übersetzung → {{atN}})",
+    "Description": ""
+  },
+  "InspectorAtMap": {
+    "Message": "Auto-Übersetzungszuordnung",
+    "Description": ""
+  },
+  "InspectorGlossary": {
+    "Message": "Gesendete Wörterbuchpaare",
+    "Description": ""
+  },
+  "InspectorTarget": {
+    "Message": "Zielsprache",
+    "Description": ""
+  },
+  "InspectorSource": {
+    "Message": "Text",
+    "Description": ""
+  },
+  "InspectorFixedTerms": {
+    "Message": "Gesendete feste Begriffe",
+    "Description": ""
+  },
+  "InspectorNone": {
+    "Message": "keine",
+    "Description": ""
+  },
+  "InspectorModelChooses": {
+    "Message": "Modell wählt",
+    "Description": ""
+  },
+  "InspectorHintsOff": {
+    "Message": "Es wurden keine Kontexthinweise gesendet (in „KI & Übersetzung“ aus oder für diese Anfrage nicht verwendet).",
+    "Description": ""
+  },
+  "InspectorInCombat": {
+    "Message": "Im Kampf",
+    "Description": ""
+  },
+  "InspectorLocation": {
+    "Message": "Ort",
+    "Description": ""
+  },
+  "InspectorPartyJobs": {
+    "Message": "Gruppenjobs",
+    "Description": ""
+  },
+  "InspectorRecent": {
+    "Message": "Letzte Zeilen",
+    "Description": ""
+  },
+  "InspectorResult": {
+    "Message": "Ergebnis",
+    "Description": ""
+  },
+  "InspectorDetected": {
+    "Message": "Erkannte Sprache",
+    "Description": ""
+  },
+  "InspectorNoValidation": {
+    "Message": "Keine Antwort validiert (der Aufruf schlug fehl oder das Ergebnis kam von anderswo).",
+    "Description": ""
+  },
+  "InspectorSchema": {
+    "Message": "JSON-Schema",
+    "Description": ""
+  },
+  "InspectorRefusal": {
+    "Message": "Keine Ablehnung / Erklärung",
+    "Description": ""
+  },
+  "InspectorLength": {
+    "Message": "Länge plausibel",
+    "Description": ""
+  },
+  "InspectorPlaceholders": {
+    "Message": "Platzhalter erhalten",
+    "Description": ""
+  },
+  "InspectorUnresolved": {
+    "Message": "Ungelöste Stellen",
+    "Description": ""
+  },
+  "InspectorWhyFallback": {
+    "Message": "Warum das Original angezeigt wird:",
+    "Description": ""
+  },
+  "InspectorTerms": {
+    "Message": "Vom Modell gemeldete Begriffe",
+    "Description": ""
+  },
+  "InspectorFromCache": {
+    "Message": "Aus dem Cache; die Aufrufe unten stammen vom ursprünglichen Aufruf.",
+    "Description": ""
+  },
+  "InspectorNoAttempts": {
+    "Message": "Es wurde kein Modell aufgerufen.",
+    "Description": ""
+  },
+  "InspectorModel": {
+    "Message": "Modell",
+    "Description": ""
+  },
+  "InspectorTokens": {
+    "Message": "Tokens (ein → aus)",
+    "Description": ""
+  },
+  "InspectorElapsed": {
+    "Message": "Dauer",
+    "Description": ""
+  },
+  "InspectorJsonMode": {
+    "Message": "JSON-Modus",
+    "Description": ""
+  },
+  "InspectorPromptOnly": {
+    "Message": "nur Prompt",
+    "Description": ""
+  },
+  "InspectorPrompts": {
+    "Message": "Prompts",
+    "Description": ""
+  },
+  "KindTranslated": {
+    "Message": "übersetzt",
+    "Description": ""
+  },
+  "LogPartial": {
+    "Message": "teilweise ungelöst",
+    "Description": ""
+  },
+  "LogSkipped": {
+    "Message": "übersprungen",
+    "Description": ""
+  },
+  "LogOriginal": {
+    "Message": "Original",
+    "Description": ""
+  },
+  "InspectorTitle": {
+    "Message": "AetherGlot — Prüfung",
     "Description": ""
   },
   "SendPreviewOriginal": {
-    "Message": "Original:",
+    "Message": "Deine Nachricht",
     "Description": ""
   },
-  "SendPreviewTranslation": {
-    "Message": "Übersetzung:",
-    "Description": ""
-  },
-  "SendPreviewTranslating": {
-    "Message": "Übersetze...",
+  "SendPreviewInputHint": {
+    "Message": "Enter: Übersetzung senden · Strg+Enter: neue Zeile",
     "Description": ""
   },
   "SendPreviewChannel": {
-    "Message": "Kanal:",
+    "Message": "Kanal",
     "Description": ""
   },
-  "SendPreviewSendBtn": {
-    "Message": "Senden",
+  "SendPreviewTranslation": {
+    "Message": "Übersetzung",
+    "Description": ""
+  },
+  "SendPreviewTranslating": {
+    "Message": "wird übersetzt …",
+    "Description": ""
+  },
+  "SendPreviewOutdated": {
+    "Message": "(wartet, bis du aufhörst zu tippen)",
+    "Description": ""
+  },
+  "SendPreviewTooLong": {
+    "Message": "Länger als der Chat erlaubt; das Ende wird abgeschnitten.",
+    "Description": ""
+  },
+  "SendPreviewBack": {
+    "Message": "Rückübersetzung:",
+    "Description": ""
+  },
+  "SendPreviewAlternatives": {
+    "Message": "Alternativen (zum Übernehmen klicken):",
+    "Description": ""
+  },
+  "SendPreviewFixedTerm": {
+    "Message": "Fest: offizieller Name im Spiel",
     "Description": ""
   },
   "SendPreviewCancelBtn": {
     "Message": "Abbrechen",
     "Description": ""
   },
-  "SendPreviewNoApiKey": {
-    "Message": "Anbieter oder API-Schlüssel nicht konfiguriert.",
+  "SendPreviewSendOriginalBtn": {
+    "Message": "Original senden",
     "Description": ""
   },
-  "SkipOwnLabel": {
-    "Message": "Eigene Nachrichten nicht übersetzen",
+  "SendPreviewSendBtn": {
+    "Message": "Übersetzung senden (Enter)",
     "Description": ""
   },
-  "ChannelNoviceNetwork": {
-    "Message": "Neulings-Netzwerk",
+  "SendPreviewInspect": {
+    "Message": "Prüfen",
     "Description": ""
   },
-  "AlwaysTranslateLabel": {
-    "Message": "Auch Nachrichten in der Client-Sprache übersetzen",
+  "SendPreviewNote": {
+    "Message": "Aktions- und Jobnamen werden auf den offiziellen Namen aus den Spieldaten festgelegt.",
     "Description": ""
   },
-  "CommandHelpSection": {
-    "Message": "Sendebefehl",
+  "SendPreviewFailed": {
+    "Message": "Übersetzung fehlgeschlagen.",
     "Description": ""
   },
-  "CommandHelpLine2": {
-    "Message": "/agsend <Präfix> <Text>    — übersetzen und an angegebenen Kanal senden",
+  "SendPreviewTitle": {
+    "Message": "AetherGlot — Sendevorschau",
     "Description": ""
   },
-  "CommandHelpLine1": {
-    "Message": "/agsend <Text>             — übersetzen und an Standard-Kanal senden",
+  "SendToneShort": {
+    "Message": "Kurz",
     "Description": ""
   },
-  "CommandHelpPrefixes": {
-    "Message": "Präfixe:  s  sh  y  p  a  fc  nn  l1-l8  cw1-cw8",
+  "SendToneNormal": {
+    "Message": "Normal",
+    "Description": ""
+  },
+  "SendTonePolite": {
+    "Message": "Höflich",
+    "Description": ""
+  },
+  "LogShowOriginal": {
+    "Message": "Original",
+    "Description": ""
+  },
+  "LogShowChips": {
+    "Message": "Begriffs-Chips",
+    "Description": ""
+  },
+  "LogSettingsBtn": {
+    "Message": "Einstellungen",
+    "Description": ""
+  },
+  "LogNotTranslated": {
+    "Message": "nicht übersetzt",
+    "Description": ""
+  },
+  "LogAlt": {
+    "Message": "alt.:",
+    "Description": ""
+  },
+  "LogNotInDictionary": {
+    "Message": "nicht im Wörterbuch, unverändert",
+    "Description": ""
+  },
+  "LogAddToDictionary": {
+    "Message": "Zum Wörterbuch hinzufügen",
+    "Description": ""
+  },
+  "LogReply": {
+    "Message": "Antworten",
+    "Description": ""
+  },
+  "LogInspect": {
+    "Message": "Prüfen",
+    "Description": ""
+  },
+  "LogNewMessages": {
+    "Message": "{0} neu ↓",
+    "Description": ""
+  },
+  "LogNoModel": {
+    "Message": "(kein Modell)",
+    "Description": ""
+  },
+  "LogDictionary": {
+    "Message": "Wörterbuch {0} ({1:N0} Begriffe)",
+    "Description": ""
+  },
+  "LogAverage": {
+    "Message": "Ø {0:0.0} s",
+    "Description": ""
+  },
+  "LogInspectLatest": {
+    "Message": "Neueste prüfen",
+    "Description": ""
+  },
+  "LogWindowTitle": {
+    "Message": "AetherGlot — Übersetzungsprotokoll",
+    "Description": ""
+  },
+  "LogFilterParty": {
+    "Message": "Nur Gruppe",
+    "Description": ""
+  },
+  "LogFilterAll": {
+    "Message": "Alle",
+    "Description": ""
+  },
+  "LogFilterMentions": {
+    "Message": "An mich",
     "Description": ""
   }
 }

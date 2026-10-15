@@ -5,7 +5,7 @@ using Dalamud.Interface.Windowing;
 namespace AetherGlot.Windows;
 
 /// <summary>⑤ Settings: General / Connection / AI & translation / Channels / Dictionary / Display.</summary>
-public sealed class ConfigWindow : Window, IDisposable
+public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 {
     private enum Tab { General, Connection, Ai, Channels, Dictionary, Display }
 
@@ -69,7 +69,7 @@ public sealed class ConfigWindow : Window, IDisposable
     ];
 
     public ConfigWindow(Plugin plugin)
-        : base(Loc.Localize("ConfigWindowTitle", "AetherGlot Settings") + "###AetherGlotSettings")
+        : base(Title())
     {
         this.plugin = plugin;
         config      = plugin.Configuration;
@@ -148,11 +148,13 @@ public sealed class ConfigWindow : Window, IDisposable
             plugin.OpenLog();
 
         Section(Loc.Localize("OutboundSection", "Send (/agsend)"));
+        ImGui.TextColored(Theme.TextMuted, Loc.Localize("OutboundPromptHint",
+            "Extra style instructions for the model (optional), e.g. \"Use British spelling\". Short / normal / polite is chosen in the send window."));
         var prompt = config.OutboundPrompt;
-        if (ImGui.InputTextMultiline("##outboundprompt", ref prompt, 2048, new Vector2(-1f, 100f)))
+        if (ImGui.InputTextMultiline("##outboundprompt", ref prompt, 2048, new Vector2(-1f, 80f)))
             config.OutboundPrompt = prompt;
-        if (ImGui.Button(Loc.Localize("ResetPromptBtn", "Reset to default")))
-            config.OutboundPrompt = Configuration.DefaultOutboundPrompt;
+        if (ImGui.Button(Loc.Localize("ResetPromptBtn", "Clear")))
+            config.OutboundPrompt = OutboundPromptDefaults.Default;
 
         var current = Channels.FirstOrDefault(c => c.Type == config.DefaultOutboundChannel);
         Label(Loc.Localize("DefaultOutboundChannelLabel", "Default send channel"));
@@ -817,6 +819,11 @@ public sealed class ConfigWindow : Window, IDisposable
         plugin.Pipeline.Cache.Capacity = config.Translation.CacheSize;
         config.Save();
     }
+
+    private static string Title() => Loc.Localize("ConfigWindowTitle", "AetherGlot Settings") + "###AetherGlotSettings";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose() { }
 }

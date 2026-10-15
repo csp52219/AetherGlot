@@ -8,7 +8,7 @@ namespace AetherGlot.Windows;
 /// over every term (virtualised table). Right: the sense editor for My dictionary entries, or
 /// a read-only view with "copy to My dictionary and edit" for the others.
 /// </summary>
-public sealed class GlossaryWindow : Window, IDisposable
+public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 {
     private const float LeftWidth  = 190;
     private const float RightWidth = 340;
@@ -93,7 +93,7 @@ public sealed class GlossaryWindow : Window, IDisposable
     }
 
     public GlossaryWindow(Plugin plugin)
-        : base(Loc.Localize("GlossaryTitle", "AetherGlot — Dictionary") + "###AetherGlotGlossary")
+        : base(Title())
     {
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(820, 420), MaximumSize = new Vector2(float.MaxValue, float.MaxValue) };
@@ -636,6 +636,11 @@ public sealed class GlossaryWindow : Window, IDisposable
     private static string AmbiguityLabel(AmbiguityBehavior b) => b == AmbiguityBehavior.ShowAll
         ? Loc.Localize("GlossaryShowAll", "show every meaning")
         : Loc.Localize("GlossaryPreferFirst", "use the top priority");
+
+    private static string Title() => Loc.Localize("GlossaryTitle", "AetherGlot — Dictionary") + "###AetherGlotGlossary";
+
+    /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
+    public void Relocalize() => WindowName = Title();
 
     public void Dispose() { }
 }

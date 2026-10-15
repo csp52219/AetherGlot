@@ -1,74 +1,117 @@
 name: Release
 
+# Builds the plugin and publishes a GitHub Release with:
+#   - latest.zip  (the plugin package made by DalamudPackager)
+#   - repo.json   (custom plugin repository manifest for Dalamud)
+# Dalamud users add https://github.com/<owner>/<repo>/releases/latest/download/repo.json
+#
+# Start it by pushing a tag like v1.2.3, or run it manually with a version.
+
 on:
   push:
-    tags:
-      - "v*.*.*.*"   # e.g. v1.0.0.0
+    tags: ["v*.*.*"]   # v1.2.3 (also matches the older four-part form v1.2.3.4)
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.2.3 or 1.2.3.4). A tag v<version> is created."
+        required: true
+      prerelease:
+        description: "Mark as pre-release"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  # Dalamud reference assemblies used to compile against (same files Dalamud loads in game)
+  DALAMUD_DISTRIB_URL: https://goatcorp.github.io/dalamud-distrib/latest.zip
+
 jobs:
-  build-and-release:
-    runs-on: windows-latest
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            raw="${INPUT_VERSION#v}"
+          else
+            raw="${GITHUB_REF_NAME#v}"
+          fi
+          if ! printf '%s' "$raw" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::Version must look like 1.2.3 or 1.2.3.4 (got '$raw')."
+            exit 1
+          fi
+          # The assembly / manifest version always has four parts
+          assembly="$raw"
+          [ "$(printf '%s' "$raw" | tr -cd '.' | wc -c)" -eq 2 ] && assembly="$raw.0"
+          echo "version=$raw" >> "$GITHUB_OUTPUT"
+          echo "assembly=$assembly" >> "$GITHUB_OUTPUT"
+          echo "tag=v$raw" >> "$GITHUB_OUTPUT"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.x"
 
-      - name: Restore
-        run: dotnet restore AetherGlot.sln
-
-      - name: Build Release
-        run: dotnet build AetherGlot/AetherGlot.csproj -c Release --no-restore
-
-      # Pack the plugin output into latest.zip
-      - name: Create plugin zip
-        shell: pwsh
+      - name: Download Dalamud
         run: |
-          $src = "AetherGlot/bin/Release"
-          Compress-Archive -Path "$src/*" -DestinationPath latest.zip -Force
+          mkdir -p "$RUNNER_TEMP/dalamud"
+          curl -fsSL "$DALAMUD_DISTRIB_URL" -o "$RUNNER_TEMP/dalamud.zip"
+          unzip -q "$RUNNER_TEMP/dalamud.zip" -d "$RUNNER_TEMP/dalamud"
+          echo "DALAMUD_HOME=$RUNNER_TEMP/dalamud/" >> "$GITHUB_ENV"
 
-      # Generate repo.json from the plugin manifest + tag version
-      - name: Generate repo.json
-        shell: pwsh
+      - name: Unit tests
+        run: dotnet test AetherGlot.Tests/AetherGlot.Tests.csproj --filter "Category!=Integration"
+
+      - name: Build plugin (Release)
+        run: >
+          dotnet build AetherGlot/AetherGlot.csproj -c Release
+          -p:Version=${{ steps.version.outputs.assembly }}
+
+      - name: Create repo.json
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          $tag     = "${{ github.ref_name }}"           # e.g. v1.0.0.0
-          $version = $tag.TrimStart("v")                # e.g. 1.0.0.0
-          $owner   = "${{ github.repository_owner }}"
-          $repo    = "${{ github.event.repository.name }}"
-          $base    = "https://github.com/$owner/$repo/releases/latest/download"
+          manifest=AetherGlot/bin/Release/AetherGlot/AetherGlot.json
+          package=AetherGlot/bin/Release/AetherGlot/latest.zip
+          test -f "$manifest" && test -f "$package"
+          download="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${TAG}/latest.zip"
+          jq --arg dl "$download" \
+             --arg repo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+             --argjson now "$(date +%s)" \
+             '[. + {
+                 RepoUrl: $repo,
+                 DownloadLinkInstall: $dl,
+                 DownloadLinkUpdate: $dl,
+                 DownloadLinkTesting: $dl,
+                 IsHide: false,
+                 IsTestingExclusive: false,
+                 LastUpdate: $now
+               }]' "$manifest" > repo.json
+          cp "$package" latest.zip
+          cat repo.json
 
-          $manifest = Get-Content "AetherGlot/bin/Release/AetherGlot.json" | ConvertFrom-Json
-
-          $entry = [ordered]@{
-            Author             = $manifest.Author
-            Name               = $manifest.Name
-            InternalName       = $manifest.InternalName
-            AssemblyVersion    = $version
-            Description        = $manifest.Description
-            ApplicableVersion  = "any"
-            Tags               = $manifest.Tags
-            DalamudApiLevel    = $manifest.DalamudApiLevel
-            Punchline          = $manifest.Punchline
-            DownloadLinkInstall   = "$base/latest.zip"
-            DownloadLinkUpdate    = "$base/latest.zip"
-            DownloadLinkTesting   = "$base/latest.zip"
-          }
-
-          ConvertTo-Json @($entry) -Depth 5 | Set-Content repo.json -Encoding UTF8NoBOM
-          Write-Host "Generated repo.json for version $version"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          generate_release_notes: true
-          files: |
-            latest.zip
-            repo.json
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
+        run: |
+          # Manual runs create the tag on the checked-out commit
+          gh release create "$TAG" latest.zip repo.json \
+            --target "$GITHUB_SHA" \
+            --title "AetherGlot $TAG" \
+            --generate-notes \
+            $PRERELEASE

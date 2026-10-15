@@ -83,7 +83,7 @@ public sealed class Plugin : IDalamudPlugin
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.Initialize(PluginInterface);
 
-        InitialiseLocalization();
+        InitialiseLocalization(PluginInterface.UiLanguage);
 
         Secrets = new CachingSecretStore(CreateSecretStore());
         ConfigurationMigrator.Run(Configuration, Secrets, Log);
@@ -145,6 +145,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         ChatGui.ChatMessage += OnChatMessage;
+        PluginInterface.LanguageChanged += OnLanguageChanged;
         Framework.Update += OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
@@ -173,18 +174,37 @@ public sealed class Plugin : IDalamudPlugin
             Configuration.Save();
         });
 
-    private static void InitialiseLocalization()
+    /// <summary>Loads loc/{lang}.json (en, ja, de, fr); unknown languages and missing keys fall back to English.</summary>
+    private static void InitialiseLocalization(string? language)
     {
-        var locDir = Path.Combine(PluginInterface.AssemblyLocation.DirectoryName!, "loc");
-        if (!Directory.Exists(locDir)) return;
+        try
+        {
+            var locDir  = Path.Combine(PluginInterface.AssemblyLocation.DirectoryName!, "loc");
+            // Dalamud passes lowercase two-letter codes; normalise anyway and only accept shipped languages
+            var lang    = string.IsNullOrWhiteSpace(language) ? "en" : language.Split('-', '_')[0].Trim().ToLowerInvariant();
+            if (lang is not ("en" or "ja" or "de" or "fr")) lang = "en";
+            var locFile = Path.Combine(locDir, $"{lang}.json");
+            if (!File.Exists(locFile))
+                locFile = Path.Combine(locDir, "en.json");
 
-        var lang    = PluginInterface.UiLanguage ?? "en";
-        var locFile = Path.Combine(locDir, $"{lang}.json");
-        if (!File.Exists(locFile))
-            locFile = Path.Combine(locDir, "en.json");
+            if (File.Exists(locFile))
+                Loc.Setup(File.ReadAllText(locFile));
+            else
+                Loc.SetupWithFallbacks();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning("[AetherGlot] Could not load translations ({Type}); using English.", ex.GetType().Name);
+            Loc.SetupWithFallbacks();
+        }
+    }
 
-        if (File.Exists(locFile))
-            Loc.Setup(File.ReadAllText(locFile));
+    // Dalamud's language setting changed: reload texts; window titles are re-read too
+    private void OnLanguageChanged(string langCode)
+    {
+        InitialiseLocalization(langCode);
+        foreach (var window in windowSystem.Windows.OfType<IRelocalizable>())
+            window.Relocalize();
     }
 
     private void OnChatMessage(IHandleableChatMessage chatMessage)
@@ -239,10 +259,10 @@ public sealed class Plugin : IDalamudPlugin
         await Glossary.ReloadAsync(forceDownload: true).ConfigureAwait(false);
         var s = Glossary.Service.Stats;
         var c = Glossary.Community;
-        Echo($"My dictionary {s.UserCount} · game data {s.GameDataCount} · community {s.CommunityCount} " +
-             $"(v{s.CommunityVersion ?? "?"}, {c?.Origin}) · auto-translate {Glossary.Catalog.Entries.Count}");
+        Echo(string.Format(Loc.Localize("GlossaryReloaded", "My dictionary {0} · game data {1} · community {2} (v{3}, {4}) · auto-translate {5}"),
+                           s.UserCount, s.GameDataCount, s.CommunityCount, s.CommunityVersion ?? "?", c?.Origin, Glossary.Catalog.Entries.Count));
         if (c?.Error is { } error)
-            Echo($"Community dictionary: {error}");
+            Echo(string.Format(Loc.Localize("GlossaryCommunityError", "Community dictionary: {0}"), error));
     }
 
     // Runs on the framework thread (command handler), so game state can be read
@@ -253,7 +273,7 @@ public sealed class Plugin : IDalamudPlugin
         var targetCode = sourceCode == "ja" ? "en" : "ja";
         if (sourceCode == clientCode && clientCode is not ("ja" or "en"))
         {
-            Echo("Dictionary lookup supports Japanese ⇔ English only.");
+            Echo(Loc.Localize("LookupJaEnOnly", "Dictionary lookup supports Japanese ⇔ English only."));
             return;
         }
 
@@ -343,7 +363,7 @@ public sealed class Plugin : IDalamudPlugin
 
             var models = await lister.ListModelsAsync(disposeCts.Token).ConfigureAwait(false);
             if (echo)
-                Echo($"{models.Count} models: {string.Join(", ", models)}");
+                Echo(string.Format(Loc.Localize("ModelsListed", "{0} models: {1}"), models.Count, string.Join(", ", models)));
             return models;
         }
         catch (OperationCanceledException)
@@ -527,6 +547,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(SendCommandName);
         ChatGui.ChatMessage -= OnChatMessage;
+        PluginInterface.LanguageChanged -= OnLanguageChanged;
         Framework.Update -= OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;

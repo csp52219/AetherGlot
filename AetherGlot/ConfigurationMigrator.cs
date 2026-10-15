@@ -40,6 +40,14 @@ internal static class ConfigurationMigrator
             changed = true;
         }
 
+        if (config.Version < 3)
+        {
+            // The v1 default forced a casual style that contradicts the tone buttons; edited prompts are kept
+            config.OutboundPrompt = OutboundPromptDefaults.Migrate(config.OutboundPrompt);
+            config.AlwaysTranslate = null;
+            changed = true;
+        }
+
         // Older builds let the loader append saved channels to the defaults (duplicates)
         var distinct = config.EnabledChannels.Distinct().ToList();
         if (distinct.Count != config.EnabledChannels.Count)

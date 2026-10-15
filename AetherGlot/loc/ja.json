@@ -1,54 +1,666 @@
 {
-  "ConfigWindowTitle": {
-    "Message": "AetherGlot 設定",
-    "Description": ""
-  },
   "CommandHelp": {
-    "Message": "AetherGlot 設定を開く",
+    "Message": "AetherGlot の設定を開く。サブコマンド: log（翻訳ログ）、dict [語]（辞書）、at（定型文一覧）、inspect（直近の翻訳を検査）、test（接続テスト）、models（モデル一覧）、reload（辞書の再読込）、lookup <文>（辞書ヒットを表示）",
     "Description": ""
   },
-  "ProviderSection": {
-    "Message": "プロバイダー設定",
+  "SendCommandHelp": {
+    "Message": "翻訳して送信: /agsend [チャンネル] <文>",
+    "Description": ""
+  },
+  "InspectNothing": {
+    "Message": "まだ検査できるものがありません（ログに翻訳済みのメッセージがありません）。",
+    "Description": ""
+  },
+  "GlossaryReloading": {
+    "Message": "辞書を再読込しています…",
+    "Description": ""
+  },
+  "GlossaryReloaded": {
+    "Message": "マイ辞書 {0}・ゲームデータ {1}・コミュニティ {2}（v{3}、{4}）・定型文 {5}",
+    "Description": ""
+  },
+  "GlossaryCommunityError": {
+    "Message": "コミュニティ辞書：{0}",
+    "Description": ""
+  },
+  "LookupJaEnOnly": {
+    "Message": "辞書の照合は日本語 ⇔ 英語のみ対応しています。",
+    "Description": ""
+  },
+  "LookupNoHits": {
+    "Message": "辞書にヒットしませんでした。",
+    "Description": ""
+  },
+  "TestStarted": {
+    "Message": "接続テストを実行しています…",
+    "Description": ""
+  },
+  "TestPassed": {
+    "Message": "接続テストに成功しました。",
+    "Description": ""
+  },
+  "TestFailed": {
+    "Message": "接続テストに失敗しました。",
+    "Description": ""
+  },
+  "SecretsNotice": {
+    "Message": "キーとシークレットは設定ファイルではなく Windows 資格情報マネージャーに保存されています。",
+    "Description": ""
+  },
+  "StepAccess": {
+    "Message": "Cloudflare Access",
+    "Description": ""
+  },
+  "StepAuth": {
+    "Message": "LiteLLM 認証",
+    "Description": ""
+  },
+  "StepModels": {
+    "Message": "モデル一覧",
+    "Description": ""
+  },
+  "StepJsonInbound": {
+    "Message": "JSON 応答（受信用モデル）",
+    "Description": ""
+  },
+  "StepJsonOutbound": {
+    "Message": "JSON 応答（送信用モデル）",
+    "Description": ""
+  },
+  "ModelsUnsupported": {
+    "Message": "モデル一覧は LiteLLM / OpenAI 互換の接続でのみ取得できます。",
+    "Description": ""
+  },
+  "ModelsListed": {
+    "Message": "{0} 個のモデル：{1}",
+    "Description": ""
+  },
+  "SendCommandUsage": {
+    "Message": "[AetherGlot] 使い方: /agsend [チャンネル] <文>\nチャンネル: s sh y p a fc nn l1-l8 cw1-cw8",
+    "Description": ""
+  },
+  "OutboundDisabled": {
+    "Message": "[AetherGlot] 送信翻訳は無効になっています。",
+    "Description": ""
+  },
+  "BubbleSample": {
+    "Message": "これは翻訳吹き出しのサンプルです。",
+    "Description": ""
+  },
+  "BubblePinned": {
+    "Message": "固定中・クリックで解除",
+    "Description": ""
+  },
+  "HistoryTitle": {
+    "Message": "最近の翻訳",
+    "Description": ""
+  },
+  "HistoryOpenLog": {
+    "Message": "翻訳ログを開く",
+    "Description": ""
+  },
+  "ChParty": {
+    "Message": "パーティ",
+    "Description": ""
+  },
+  "ChAlliance": {
+    "Message": "アライアンス",
+    "Description": ""
+  },
+  "ChSay": {
+    "Message": "Say",
+    "Description": ""
+  },
+  "ChShout": {
+    "Message": "Shout",
+    "Description": ""
+  },
+  "ChYell": {
+    "Message": "Yell",
+    "Description": ""
+  },
+  "ChFc": {
+    "Message": "FC",
+    "Description": ""
+  },
+  "ChLs": {
+    "Message": "LS 1–8",
+    "Description": ""
+  },
+  "ChCwls": {
+    "Message": "CWLS 1–8",
+    "Description": ""
+  },
+  "ChTell": {
+    "Message": "Tell",
+    "Description": ""
+  },
+  "ChNn": {
+    "Message": "ビギナーチャンネル",
+    "Description": ""
+  },
+  "AtLoading": {
+    "Message": "ゲームデータを読み込んでいます…",
+    "Description": ""
+  },
+  "AtEmpty": {
+    "Message": "定型文のデータがありません。辞書の設定で「ゲームデータを使う」を有効にしてください。",
+    "Description": ""
+  },
+  "AtFlow": {
+    "Message": "定型文の扱われ方",
+    "Description": ""
+  },
+  "AtFlowReceived": {
+    "Message": "受信（ペイロードの ID）",
+    "Description": ""
+  },
+  "AtFlowSent": {
+    "Message": "モデルへ送る文",
+    "Description": ""
+  },
+  "AtFlowShown": {
+    "Message": "表示（定型文を戻した文）",
+    "Description": ""
+  },
+  "AtFlowExample": {
+    "Message": "（例。最後に受信した定型文がここに表示されます）",
+    "Description": ""
+  },
+  "AtAll": {
+    "Message": "すべて",
+    "Description": ""
+  },
+  "AtSearch": {
+    "Message": "日本語・英語・ID（グループ:キー）で検索",
+    "Description": ""
+  },
+  "AtRecentOnly": {
+    "Message": "最近チャットに出たものだけ（{0}）",
+    "Description": ""
+  },
+  "AtResults": {
+    "Message": "{0:N0} 件・閲覧のみ",
+    "Description": ""
+  },
+  "GlossaryColJa": {
+    "Message": "日本語",
+    "Description": ""
+  },
+  "AtUsage": {
+    "Message": "使い方",
+    "Description": ""
+  },
+  "AtUsageJob": {
+    "Message": "受信：固定・送信：置換候補",
+    "Description": ""
+  },
+  "AtUsageAction": {
+    "Message": "手打ちの技名の照合にも使用",
+    "Description": ""
+  },
+  "AtUsagePlace": {
+    "Message": "文脈ヒントにも使用",
+    "Description": ""
+  },
+  "AtUsageDisplay": {
+    "Message": "受信：そのまま表示",
+    "Description": ""
+  },
+  "AtTitle": {
+    "Message": "AetherGlot — 定型文",
+    "Description": ""
+  },
+  "TabGeneral": {
+    "Message": "一般",
+    "Description": ""
+  },
+  "TabConnection": {
+    "Message": "接続",
+    "Description": ""
+  },
+  "TabAi": {
+    "Message": "AI・翻訳",
+    "Description": ""
+  },
+  "TabChannels": {
+    "Message": "チャンネル",
+    "Description": ""
+  },
+  "TabDictionary": {
+    "Message": "辞書",
+    "Description": ""
+  },
+  "TabDisplay": {
+    "Message": "表示",
+    "Description": ""
+  },
+  "SecretsFooter": {
+    "Message": "キーとシークレットは設定ファイルではなく Windows 資格情報マネージャーに保存されます。",
+    "Description": ""
+  },
+  "SaveBtn": {
+    "Message": "保存",
+    "Description": ""
+  },
+  "InboundLabel": {
+    "Message": "受信メッセージを翻訳する",
+    "Description": ""
+  },
+  "OutboundLabel": {
+    "Message": "/agsend を有効にする（送信前に翻訳）",
+    "Description": ""
+  },
+  "SkipOwnLabel": {
+    "Message": "自分の発言は翻訳しない",
+    "Description": ""
+  },
+  "OpenLogBtn": {
+    "Message": "翻訳ログを開く",
+    "Description": ""
+  },
+  "OutboundSection": {
+    "Message": "送信（/agsend）",
+    "Description": ""
+  },
+  "OutboundPromptHint": {
+    "Message": "モデルへの追加の文体指示（任意）。例：「イギリス英語の綴りで」。短く／普通／丁寧は送信ウィンドウで選びます。",
+    "Description": ""
+  },
+  "ResetPromptBtn": {
+    "Message": "クリア",
+    "Description": ""
+  },
+  "DefaultOutboundChannelLabel": {
+    "Message": "既定の送信チャンネル",
+    "Description": ""
+  },
+  "CommandHelpSection": {
+    "Message": "コマンド",
+    "Description": ""
+  },
+  "HelpSettings": {
+    "Message": "設定",
+    "Description": ""
+  },
+  "HelpLog": {
+    "Message": "翻訳ログ",
+    "Description": ""
+  },
+  "HelpTest": {
+    "Message": "接続テスト",
+    "Description": ""
+  },
+  "HelpLookup": {
+    "Message": "辞書ヒットを表示",
+    "Description": ""
+  },
+  "HelpSend": {
+    "Message": "翻訳して送信",
+    "Description": ""
+  },
+  "ModeLabel": {
+    "Message": "接続方法",
+    "Description": ""
+  },
+  "DirectSection": {
+    "Message": "ベンダー API",
     "Description": ""
   },
   "ProviderLabel": {
     "Message": "プロバイダー",
     "Description": ""
   },
-  "ModelLabel": {
-    "Message": "モデル",
-    "Description": ""
-  },
   "EndpointLabel": {
-    "Message": "カスタムエンドポイント（任意）",
+    "Message": "エンドポイント",
     "Description": ""
   },
   "ApiKeyLabel": {
     "Message": "API キー",
     "Description": ""
   },
+  "BaseUrlLabel": {
+    "Message": "ベース URL",
+    "Description": ""
+  },
+  "VirtualKeyLabel": {
+    "Message": "Virtual key",
+    "Description": ""
+  },
+  "UserTagLabel": {
+    "Message": "ユーザータグ",
+    "Description": ""
+  },
+  "ModeOpenAICompatible": {
+    "Message": "OpenAI 互換",
+    "Description": ""
+  },
+  "ApiKeyOptionalLabel": {
+    "Message": "API キー（任意）",
+    "Description": ""
+  },
+  "CfSection": {
+    "Message": "Cloudflare Access（サービストークン）",
+    "Description": ""
+  },
+  "CfEnabledLabel": {
+    "Message": "使用する",
+    "Description": ""
+  },
+  "CfHeadersLabel": {
+    "Message": "送信するヘッダー",
+    "Description": ""
+  },
+  "ExtraHeadersLabel": {
+    "Message": "追加ヘッダー",
+    "Description": ""
+  },
+  "AddHeaderBtn": {
+    "Message": "+ ヘッダーを追加",
+    "Description": ""
+  },
+  "HeaderName": {
+    "Message": "名前",
+    "Description": ""
+  },
+  "HeaderValue": {
+    "Message": "値",
+    "Description": ""
+  },
+  "ModelsSection": {
+    "Message": "モデル",
+    "Description": ""
+  },
+  "FetchModelsLiteLlm": {
+    "Message": "LiteLLM から一覧を取得",
+    "Description": ""
+  },
+  "FetchModelsBtn": {
+    "Message": "モデル一覧を取得",
+    "Description": ""
+  },
+  "FetchModelsEmpty": {
+    "Message": "モデルが返されませんでした。詳しくは接続テストを実行してください。",
+    "Description": ""
+  },
+  "ModelsCount": {
+    "Message": "{0} 個のモデル",
+    "Description": ""
+  },
+  "InboundModelLabel": {
+    "Message": "受信用（速さ重視）",
+    "Description": ""
+  },
+  "OutboundModelLabel": {
+    "Message": "送信用（品質重視）",
+    "Description": ""
+  },
+  "JsonModeLabel": {
+    "Message": "JSON 形式を指定する（対応しないモデルにはプロンプトで指示）",
+    "Description": ""
+  },
+  "TestTitle": {
+    "Message": "接続テスト",
+    "Description": ""
+  },
+  "RunTestBtn": {
+    "Message": "実行",
+    "Description": ""
+  },
+  "TestHowToRead": {
+    "Message": "失敗したときの見方",
+    "Description": ""
+  },
+  "TestHint302": {
+    "Message": "302 / 403：Cloudflare Access のポリシーが Service Auth になっているか確認してください。",
+    "Description": ""
+  },
+  "TestHint401": {
+    "Message": "401：LiteLLM の virtual key が無効か期限切れです。",
+    "Description": ""
+  },
+  "TestHintModel": {
+    "Message": "モデルが見つからない：virtual key でそのモデルが使えるか確認してください。",
+    "Description": ""
+  },
+  "ChangeInConnectionTab": {
+    "Message": "「接続」タブで変更",
+    "Description": ""
+  },
+  "UnresolvedSection": {
+    "Message": "訳せない語があるとき",
+    "Description": ""
+  },
+  "UnresolvedPartial": {
+    "Message": "訳せる部分は訳し、残りは原文のまま印を付ける（推奨）",
+    "Description": ""
+  },
+  "UnresolvedOriginal": {
+    "Message": "原文だけを表示する",
+    "Description": ""
+  },
+  "UnresolvedHide": {
+    "Message": "何も表示しない",
+    "Description": ""
+  },
+  "DiscardRefusals": {
+    "Message": "拒否・謝罪（「翻訳できません」など）は捨てて原文を表示する",
+    "Description": ""
+  },
+  "FreshTermsSection": {
+    "Message": "用語を最新に保つ",
+    "Description": ""
+  },
+  "UseGameData": {
+    "Message": "定型文と技名をゲームデータから読み込む（パッチに自動で追従）",
+    "Description": ""
+  },
+  "CommunityAutoUpdate": {
+    "Message": "起動時にコミュニティ辞書を更新する",
+    "Description": ""
+  },
+  "SendContextHints": {
+    "Message": "場所・戦闘状態・パーティのジョブをヒントとして送る",
+    "Description": ""
+  },
+  "CommunityUrl": {
+    "Message": "コミュニティ辞書の URL",
+    "Description": ""
+  },
+  "SummaryLiteLlmCf": {
+    "Message": "LiteLLM（Cloudflare Access 経由）",
+    "Description": ""
+  },
+  "SummaryLine": {
+    "Message": "{0}・受信 {1} / 送信 {2}",
+    "Description": ""
+  },
+  "ChannelsHelp": {
+    "Message": "ここで選んだチャンネルのメッセージを翻訳します。表示先は「表示」タブで設定します。",
+    "Description": ""
+  },
+  "DictMine": {
+    "Message": "マイ辞書",
+    "Description": ""
+  },
+  "DictGame": {
+    "Message": "ゲームデータ",
+    "Description": ""
+  },
+  "DictAutoTranslate": {
+    "Message": "定型文",
+    "Description": ""
+  },
+  "DictCommunity": {
+    "Message": "コミュニティ",
+    "Description": ""
+  },
+  "DictPending": {
+    "Message": "承認待ち",
+    "Description": ""
+  },
+  "DictUpdateNow": {
+    "Message": "今すぐ更新",
+    "Description": ""
+  },
+  "DictOpenWindow": {
+    "Message": "辞書を開く",
+    "Description": ""
+  },
+  "DictOpenAt": {
+    "Message": "定型文一覧",
+    "Description": ""
+  },
+  "PresetLabel": {
+    "Message": "プリセット",
+    "Description": ""
+  },
+  "PresetRecommended": {
+    "Message": "おすすめ",
+    "Description": ""
+  },
+  "PresetWindow": {
+    "Message": "ウィンドウのみ",
+    "Description": ""
+  },
+  "PresetGameChat": {
+    "Message": "ゲームチャットのみ",
+    "Description": ""
+  },
+  "PresetBubble": {
+    "Message": "吹き出しのみ",
+    "Description": ""
+  },
+  "PresetCustom": {
+    "Message": "カスタム",
+    "Description": ""
+  },
+  "PresetHint": {
+    "Message": "表を編集すると「カスタム」に切り替わります。",
+    "Description": ""
+  },
+  "RoutesSection": {
+    "Message": "チャンネルごとの表示先",
+    "Description": ""
+  },
+  "BubbleOnlyParty": {
+    "Message": "吹き出しはパーティリストに付くため、パーティとアライアンスだけで使えます。",
+    "Description": ""
+  },
+  "TestDisplayBtn": {
+    "Message": "表示テスト",
+    "Description": ""
+  },
+  "TestDisplayTip": {
+    "Message": "翻訳ログにサンプルを追加します（モデルは呼びません）。",
+    "Description": ""
+  },
+  "ColChannel": {
+    "Message": "チャンネル",
+    "Description": ""
+  },
+  "ColBubble": {
+    "Message": "吹き出し",
+    "Description": ""
+  },
+  "ColLog": {
+    "Message": "翻訳ログ",
+    "Description": ""
+  },
+  "ColGameChat": {
+    "Message": "ゲームチャット",
+    "Description": ""
+  },
+  "ColCombat": {
+    "Message": "戦闘中",
+    "Description": ""
+  },
+  "CardBubble": {
+    "Message": "吹き出し",
+    "Description": ""
+  },
+  "BubbleSeconds": {
+    "Message": "表示秒数",
+    "Description": ""
+  },
+  "BubbleMax": {
+    "Message": "1 人あたりの最大数",
+    "Description": ""
+  },
+  "BubbleExtend": {
+    "Message": "長文は長めに表示",
+    "Description": ""
+  },
+  "BubbleHistory": {
+    "Message": "右下に直近 3 件",
+    "Description": ""
+  },
+  "HotkeyLabel": {
+    "Message": "切り替えキー",
+    "Description": ""
+  },
+  "CardLog": {
+    "Message": "翻訳ログ",
+    "Description": ""
+  },
+  "LogOneLine": {
+    "Message": "1 行表示（クリックで原文）",
+    "Description": ""
+  },
+  "LogPause": {
+    "Message": "上にスクロール中は自動スクロールを止める",
+    "Description": ""
+  },
+  "LogHighlight": {
+    "Message": "自分宛てのメッセージを強調",
+    "Description": ""
+  },
+  "CardGameChat": {
+    "Message": "ゲームチャット",
+    "Description": ""
+  },
+  "GameChatOutput": {
+    "Message": "出力先",
+    "Description": ""
+  },
+  "GameChatPrefix": {
+    "Message": "行頭の記号",
+    "Description": ""
+  },
+  "GameChatReplace": {
+    "Message": "原文を訳文に置き換える",
+    "Description": ""
+  },
+  "GameChatReplaceTip": {
+    "Message": "訳文がキャッシュ済みのときだけ置き換えられます。それ以外は訳文を新しい行として追加します。",
+    "Description": ""
+  },
   "HideBtn": {
-    "Message": "非表示",
+    "Message": "隠す",
     "Description": ""
   },
   "ShowBtn": {
     "Message": "表示",
     "Description": ""
   },
-  "TranslationSection": {
-    "Message": "翻訳設定",
+  "ConfigWindowTitle": {
+    "Message": "AetherGlot 設定",
     "Description": ""
   },
-  "InboundLabel": {
-    "Message": "受信翻訳を有効にする",
+  "ModeDirect": {
+    "Message": "直接（ベンダー API）",
     "Description": ""
   },
-  "OutboundLabel": {
-    "Message": "送信翻訳を有効にする",
+  "ModeLiteLlm": {
+    "Message": "LiteLLM プロキシ",
     "Description": ""
   },
-  "ChannelSection": {
-    "Message": "翻訳対象チャットチャンネル",
+  "ChannelParty": {
+    "Message": "パーティ",
+    "Description": ""
+  },
+  "ChannelAlly": {
+    "Message": "アライアンス",
     "Description": ""
   },
   "ChannelSay": {
@@ -63,16 +675,16 @@
     "Message": "Yell",
     "Description": ""
   },
-  "ChannelParty": {
-    "Message": "Party",
-    "Description": ""
-  },
-  "ChannelAlly": {
-    "Message": "Alliance",
-    "Description": ""
-  },
   "ChannelFc": {
-    "Message": "FreeCompany",
+    "Message": "フリーカンパニー",
+    "Description": ""
+  },
+  "ChannelTell": {
+    "Message": "Tell",
+    "Description": ""
+  },
+  "ChannelNoviceNetwork": {
+    "Message": "ビギナーチャンネル",
     "Description": ""
   },
   "ChannelLs1": {
@@ -139,92 +751,660 @@
     "Message": "CWLS 8",
     "Description": ""
   },
-  "OutboundSection": {
-    "Message": "送信プロンプト（送信翻訳用）",
+  "CombatAll": {
+    "Message": "すべて",
     "Description": ""
   },
-  "ResetPromptBtn": {
-    "Message": "デフォルトに戻す",
+  "CombatMentions": {
+    "Message": "自分宛てのみ",
     "Description": ""
   },
-  "DefaultOutboundChannelLabel": {
-    "Message": "デフォルト送信チャンネル",
+  "CombatStop": {
+    "Message": "止める",
     "Description": ""
   },
-  "SaveBtn": {
+  "OutputOriginal": {
+    "Message": "元のチャンネル",
+    "Description": ""
+  },
+  "OutputEcho": {
+    "Message": "エコー",
+    "Description": ""
+  },
+  "GlossaryPending": {
+    "Message": "承認待ち",
+    "Description": ""
+  },
+  "GlossaryUpdated": {
+    "Message": "最終更新",
+    "Description": ""
+  },
+  "GlossaryCommunity": {
+    "Message": "コミュニティ",
+    "Description": ""
+  },
+  "GlossaryGameData": {
+    "Message": "ゲームデータ",
+    "Description": ""
+  },
+  "GlossaryUpdating": {
+    "Message": "更新中…",
+    "Description": ""
+  },
+  "GlossarySearch": {
+    "Message": "英語・日本語・略語で検索",
+    "Description": ""
+  },
+  "GlossaryAllKinds": {
+    "Message": "すべての種別",
+    "Description": ""
+  },
+  "GlossaryAdd": {
+    "Message": "+ 追加",
+    "Description": ""
+  },
+  "GlossaryResults": {
+    "Message": "{0:N0} 語",
+    "Description": ""
+  },
+  "GlossaryColEn": {
+    "Message": "英語・略語",
+    "Description": ""
+  },
+  "GlossaryColKind": {
+    "Message": "種別",
+    "Description": ""
+  },
+  "GlossaryColRules": {
+    "Message": "文脈",
+    "Description": ""
+  },
+  "GlossaryColSource": {
+    "Message": "出典",
+    "Description": ""
+  },
+  "GlossaryRules": {
+    "Message": "{0} 義・ルール {1}",
+    "Description": ""
+  },
+  "GlossaryPendingHelp": {
+    "Message": "モデルが訳せなかった語です。登録すると次回から訳されます。",
+    "Description": ""
+  },
+  "GlossaryPendingEmpty": {
+    "Message": "承認待ちの語はありません。",
+    "Description": ""
+  },
+  "GlossaryPendingWord": {
+    "Message": "語",
+    "Description": ""
+  },
+  "GlossaryPendingGuess": {
+    "Message": "モデルの推測",
+    "Description": ""
+  },
+  "GlossaryPendingSeen": {
+    "Message": "出現",
+    "Description": ""
+  },
+  "GlossaryRegister": {
+    "Message": "登録",
+    "Description": ""
+  },
+  "GlossaryIgnore": {
+    "Message": "無視",
+    "Description": ""
+  },
+  "AddDictTitle": {
+    "Message": "マイ辞書に追加",
+    "Description": ""
+  },
+  "AddDictMeaning": {
+    "Message": "意味",
+    "Description": ""
+  },
+  "AddDictSave": {
     "Message": "保存",
     "Description": ""
   },
-  "SendCommandHelp": {
-    "Message": "翻訳して送信: /agsend [チャンネル] <テキスト>",
+  "GlossaryEditFull": {
+    "Message": "意味ごとに編集…",
     "Description": ""
   },
-  "OutboundDisabled": {
-    "Message": "[AetherGlot] 送信翻訳は無効です。",
+  "AddDictCancel": {
+    "Message": "キャンセル",
     "Description": ""
   },
-  "SendCommandUsage": {
-    "Message": "[AetherGlot] 使い方: /agsend [チャンネル] <翻訳して送信するテキスト>\nプレフィックス: s sh y p a fc nn l1-l8 cw1-cw8",
+  "GlossarySelectHint": {
+    "Message": "語を選ぶと意味が表示されます。自分で追加することもできます。",
     "Description": ""
   },
-  "SendPreviewTitle": {
-    "Message": "AetherGlot — 送信プレビュー",
+  "GlossaryAtId": {
+    "Message": "定型文",
+    "Description": ""
+  },
+  "GlossaryPriority": {
+    "Message": "優先度",
+    "Description": ""
+  },
+  "GlossaryInCombat": {
+    "Message": "戦闘",
+    "Description": ""
+  },
+  "GlossaryInCombatYes": {
+    "Message": "戦闘中",
+    "Description": ""
+  },
+  "GlossaryInCombatNo": {
+    "Message": "非戦闘中",
+    "Description": ""
+  },
+  "GlossaryWords": {
+    "Message": "共起語",
+    "Description": ""
+  },
+  "GlossaryJobs": {
+    "Message": "パーティのジョブ",
+    "Description": ""
+  },
+  "GlossaryNote": {
+    "Message": "メモ",
+    "Description": ""
+  },
+  "GlossaryOnAmbiguous": {
+    "Message": "決めきれないとき",
+    "Description": ""
+  },
+  "GlossaryCopyToMine": {
+    "Message": "マイ辞書にコピーして編集",
+    "Description": ""
+  },
+  "GlossaryPrecedence": {
+    "Message": "優先順位：マイ辞書 > ゲームデータ > コミュニティ",
+    "Description": ""
+  },
+  "GlossaryNewEntry": {
+    "Message": "新しい語（マイ辞書）",
+    "Description": ""
+  },
+  "GlossaryEditEntry": {
+    "Message": "編集（マイ辞書）",
+    "Description": ""
+  },
+  "GlossaryAliasesEn": {
+    "Message": "英語の綴り・略語（カンマ区切り）",
+    "Description": ""
+  },
+  "GlossaryAliasesJa": {
+    "Message": "日本語の表記（カンマ区切り）",
+    "Description": ""
+  },
+  "GlossarySense": {
+    "Message": "意味",
+    "Description": ""
+  },
+  "GlossaryRemoveSense": {
+    "Message": "削除",
+    "Description": ""
+  },
+  "GlossaryPriorityTip": {
+    "Message": "ほかに決め手がないときは小さいほうが優先されます。",
+    "Description": ""
+  },
+  "GlossaryEither": {
+    "Message": "どちらでも",
+    "Description": ""
+  },
+  "GlossaryWordsHint": {
+    "Message": "この意味のときに一緒に出る語（brb, dot …）",
+    "Description": ""
+  },
+  "GlossaryJobsHint": {
+    "Message": "この意味を示すパーティのジョブ（SCH, WHM …）",
+    "Description": ""
+  },
+  "GlossaryAddSense": {
+    "Message": "+ 意味を追加",
+    "Description": ""
+  },
+  "GlossarySave": {
+    "Message": "保存",
+    "Description": ""
+  },
+  "GlossaryDelete": {
+    "Message": "削除",
+    "Description": ""
+  },
+  "GlossaryDeleteTip": {
+    "Message": "Shift を押しながらクリックすると削除します。",
+    "Description": ""
+  },
+  "GlossaryDuplicate": {
+    "Message": "「{0}」はすでにマイ辞書にあります。そちらを編集してください。",
+    "Description": ""
+  },
+  "GlossarySaveFailed": {
+    "Message": "保存できませんでした（{0}）。",
+    "Description": ""
+  },
+  "KindAutoTranslate": {
+    "Message": "定型文",
+    "Description": ""
+  },
+  "KindAction": {
+    "Message": "アクション",
+    "Description": ""
+  },
+  "KindStatus": {
+    "Message": "ステータス",
+    "Description": ""
+  },
+  "KindJob": {
+    "Message": "ジョブ",
+    "Description": ""
+  },
+  "KindContent": {
+    "Message": "コンテンツ",
+    "Description": ""
+  },
+  "KindPlace": {
+    "Message": "地名",
+    "Description": ""
+  },
+  "KindMechanic": {
+    "Message": "ギミック",
+    "Description": ""
+  },
+  "KindSlang": {
+    "Message": "スラング",
+    "Description": ""
+  },
+  "KindAbbreviation": {
+    "Message": "略語",
+    "Description": ""
+  },
+  "KindOther": {
+    "Message": "その他",
+    "Description": ""
+  },
+  "GlossaryMine": {
+    "Message": "マイ辞書",
+    "Description": ""
+  },
+  "GlossaryAt": {
+    "Message": "定型文",
+    "Description": ""
+  },
+  "GlossaryShowAll": {
+    "Message": "すべての意味を表示",
+    "Description": ""
+  },
+  "GlossaryPreferFirst": {
+    "Message": "優先度の高い意味を使う",
+    "Description": ""
+  },
+  "GlossaryTitle": {
+    "Message": "AetherGlot — 辞書",
+    "Description": ""
+  },
+  "GlossaryAll": {
+    "Message": "すべて",
+    "Description": ""
+  },
+  "GlossaryGameNames": {
+    "Message": "ゲーム内の名称",
+    "Description": ""
+  },
+  "InspectorEmpty": {
+    "Message": "まだ検査対象がありません。ログの各行の「検査」を使ってください。",
+    "Description": ""
+  },
+  "InspectorLatest": {
+    "Message": "直近の翻訳を検査",
+    "Description": ""
+  },
+  "InspectorInput": {
+    "Message": "送った内容",
+    "Description": ""
+  },
+  "InspectorHints": {
+    "Message": "文脈ヒント",
+    "Description": ""
+  },
+  "InspectorValidation": {
+    "Message": "検証",
+    "Description": ""
+  },
+  "InspectorAttempts": {
+    "Message": "モデルへの試行（生データ）",
+    "Description": ""
+  },
+  "LogTranslating": {
+    "Message": "翻訳中…",
+    "Description": ""
+  },
+  "InspectorRetranslating": {
+    "Message": "翻訳中…",
+    "Description": ""
+  },
+  "InspectorRetranslate": {
+    "Message": "再翻訳",
+    "Description": ""
+  },
+  "InspectorRetranslateTip": {
+    "Message": "同じリクエストをキャッシュなしで送り直し、ログの行を更新します。",
+    "Description": ""
+  },
+  "InspectorLatestShort": {
+    "Message": "直近",
+    "Description": ""
+  },
+  "InspectorOutbound": {
+    "Message": "送信（送信プレビュー）",
+    "Description": ""
+  },
+  "InspectorFailed": {
+    "Message": "失敗",
+    "Description": ""
+  },
+  "InspectorUnresolvedPrompt": {
+    "Message": "どの辞書にもありません。登録すると次回から訳されます：",
+    "Description": ""
+  },
+  "InspectorPlaceholderized": {
+    "Message": "本文（定型文 → {{atN}}）",
+    "Description": ""
+  },
+  "InspectorAtMap": {
+    "Message": "定型文の対応表",
+    "Description": ""
+  },
+  "InspectorGlossary": {
+    "Message": "送った辞書の組",
+    "Description": ""
+  },
+  "InspectorTarget": {
+    "Message": "翻訳先の言語",
+    "Description": ""
+  },
+  "InspectorSource": {
+    "Message": "本文",
+    "Description": ""
+  },
+  "InspectorFixedTerms": {
+    "Message": "送った固定語",
+    "Description": ""
+  },
+  "InspectorNone": {
+    "Message": "なし",
+    "Description": ""
+  },
+  "InspectorModelChooses": {
+    "Message": "モデルが選ぶ",
+    "Description": ""
+  },
+  "InspectorHintsOff": {
+    "Message": "文脈ヒントは送っていません（「AI・翻訳」の設定でオフ、またはこのリクエストでは未使用）。",
+    "Description": ""
+  },
+  "InspectorInCombat": {
+    "Message": "戦闘中",
+    "Description": ""
+  },
+  "InspectorLocation": {
+    "Message": "場所",
+    "Description": ""
+  },
+  "InspectorPartyJobs": {
+    "Message": "パーティのジョブ",
+    "Description": ""
+  },
+  "InspectorRecent": {
+    "Message": "直近の発言",
+    "Description": ""
+  },
+  "InspectorResult": {
+    "Message": "結果",
+    "Description": ""
+  },
+  "InspectorDetected": {
+    "Message": "検出した言語",
+    "Description": ""
+  },
+  "InspectorNoValidation": {
+    "Message": "検証した応答はありません（呼び出しに失敗したか、結果が別の経路で得られました）。",
+    "Description": ""
+  },
+  "InspectorSchema": {
+    "Message": "JSON スキーマ",
+    "Description": ""
+  },
+  "InspectorRefusal": {
+    "Message": "拒否・説明文なし",
+    "Description": ""
+  },
+  "InspectorLength": {
+    "Message": "長さが妥当",
+    "Description": ""
+  },
+  "InspectorPlaceholders": {
+    "Message": "プレースホルダーを保持",
+    "Description": ""
+  },
+  "InspectorUnresolved": {
+    "Message": "未解決の箇所",
+    "Description": ""
+  },
+  "InspectorWhyFallback": {
+    "Message": "原文を表示した理由：",
+    "Description": ""
+  },
+  "InspectorTerms": {
+    "Message": "モデルが報告した用語",
+    "Description": ""
+  },
+  "InspectorFromCache": {
+    "Message": "キャッシュから返しました。下の試行は元の呼び出しのものです。",
+    "Description": ""
+  },
+  "InspectorNoAttempts": {
+    "Message": "モデルは呼び出していません。",
+    "Description": ""
+  },
+  "InspectorModel": {
+    "Message": "モデル",
+    "Description": ""
+  },
+  "InspectorTokens": {
+    "Message": "トークン（入力 → 出力）",
+    "Description": ""
+  },
+  "InspectorElapsed": {
+    "Message": "所要時間",
+    "Description": ""
+  },
+  "InspectorJsonMode": {
+    "Message": "JSON モード",
+    "Description": ""
+  },
+  "InspectorPromptOnly": {
+    "Message": "プロンプトのみ",
+    "Description": ""
+  },
+  "InspectorPrompts": {
+    "Message": "プロンプト",
+    "Description": ""
+  },
+  "KindTranslated": {
+    "Message": "翻訳済み",
+    "Description": ""
+  },
+  "LogPartial": {
+    "Message": "一部未解決",
+    "Description": ""
+  },
+  "LogSkipped": {
+    "Message": "スキップ",
+    "Description": ""
+  },
+  "LogOriginal": {
+    "Message": "原文",
+    "Description": ""
+  },
+  "InspectorTitle": {
+    "Message": "AetherGlot — 検査",
     "Description": ""
   },
   "SendPreviewOriginal": {
-    "Message": "原文:",
+    "Message": "送る文",
     "Description": ""
   },
-  "SendPreviewTranslation": {
-    "Message": "翻訳:",
-    "Description": ""
-  },
-  "SendPreviewTranslating": {
-    "Message": "翻訳中...",
+  "SendPreviewInputHint": {
+    "Message": "Enter：訳文を送信・Ctrl+Enter：改行",
     "Description": ""
   },
   "SendPreviewChannel": {
-    "Message": "チャンネル:",
+    "Message": "チャンネル",
     "Description": ""
   },
-  "SendPreviewSendBtn": {
-    "Message": "送信",
+  "SendPreviewTranslation": {
+    "Message": "訳文",
+    "Description": ""
+  },
+  "SendPreviewTranslating": {
+    "Message": "翻訳中…",
+    "Description": ""
+  },
+  "SendPreviewOutdated": {
+    "Message": "（入力が止まるのを待っています）",
+    "Description": ""
+  },
+  "SendPreviewTooLong": {
+    "Message": "チャットの上限を超えています。末尾が切れます。",
+    "Description": ""
+  },
+  "SendPreviewBack": {
+    "Message": "逆翻訳：",
+    "Description": ""
+  },
+  "SendPreviewAlternatives": {
+    "Message": "言い換え（クリックで採用）：",
+    "Description": ""
+  },
+  "SendPreviewFixedTerm": {
+    "Message": "固定：ゲーム内の正式名",
     "Description": ""
   },
   "SendPreviewCancelBtn": {
     "Message": "キャンセル",
     "Description": ""
   },
-  "SendPreviewNoApiKey": {
-    "Message": "プロバイダーまたは API キーが設定されていません。",
+  "SendPreviewSendOriginalBtn": {
+    "Message": "原文で送信",
     "Description": ""
   },
-  "SkipOwnLabel": {
-    "Message": "自分のメッセージは翻訳しない",
+  "SendPreviewSendBtn": {
+    "Message": "訳文で送信 (Enter)",
     "Description": ""
   },
-  "ChannelNoviceNetwork": {
-    "Message": "ビギナーチャンネル",
+  "SendPreviewInspect": {
+    "Message": "検査",
     "Description": ""
   },
-  "AlwaysTranslateLabel": {
-    "Message": "クライアントの言語と同じメッセージも翻訳する",
+  "SendPreviewNote": {
+    "Message": "技名・ジョブ名はゲームデータの正式名で固定されます。",
     "Description": ""
   },
-  "CommandHelpSection": {
-    "Message": "送信コマンド",
+  "SendPreviewFailed": {
+    "Message": "翻訳に失敗しました。",
     "Description": ""
   },
-  "CommandHelpLine2": {
-    "Message": "/agsend <プレフィックス> <テキスト>  — 指定チャンネルに翻訳して送信",
+  "SendPreviewTitle": {
+    "Message": "AetherGlot — 送信プレビュー",
     "Description": ""
   },
-  "CommandHelpLine1": {
-    "Message": "/agsend <テキスト>                  — デフォルトチャンネルに翻訳して送信",
+  "SendToneShort": {
+    "Message": "短く",
     "Description": ""
   },
-  "CommandHelpPrefixes": {
-    "Message": "プレフィックス:  s  sh  y  p  a  fc  nn  l1-l8  cw1-cw8",
+  "SendToneNormal": {
+    "Message": "普通",
+    "Description": ""
+  },
+  "SendTonePolite": {
+    "Message": "丁寧",
+    "Description": ""
+  },
+  "LogShowOriginal": {
+    "Message": "原文",
+    "Description": ""
+  },
+  "LogShowChips": {
+    "Message": "用語チップ",
+    "Description": ""
+  },
+  "LogSettingsBtn": {
+    "Message": "設定",
+    "Description": ""
+  },
+  "LogNotTranslated": {
+    "Message": "未翻訳",
+    "Description": ""
+  },
+  "LogAlt": {
+    "Message": "別案：",
+    "Description": ""
+  },
+  "LogNotInDictionary": {
+    "Message": "辞書になし・原文のまま",
+    "Description": ""
+  },
+  "LogAddToDictionary": {
+    "Message": "辞書に追加",
+    "Description": ""
+  },
+  "LogReply": {
+    "Message": "返信",
+    "Description": ""
+  },
+  "LogInspect": {
+    "Message": "検査",
+    "Description": ""
+  },
+  "LogNewMessages": {
+    "Message": "新着 {0} 件 ↓",
+    "Description": ""
+  },
+  "LogNoModel": {
+    "Message": "（モデル未設定）",
+    "Description": ""
+  },
+  "LogDictionary": {
+    "Message": "辞書 {0}（{1:N0} 語）",
+    "Description": ""
+  },
+  "LogAverage": {
+    "Message": "平均 {0:0.0} 秒",
+    "Description": ""
+  },
+  "LogInspectLatest": {
+    "Message": "直近を検査",
+    "Description": ""
+  },
+  "LogWindowTitle": {
+    "Message": "AetherGlot — 翻訳ログ",
+    "Description": ""
+  },
+  "LogFilterParty": {
+    "Message": "パーティのみ",
+    "Description": ""
+  },
+  "LogFilterAll": {
+    "Message": "すべて",
+    "Description": ""
+  },
+  "LogFilterMentions": {
+    "Message": "自分宛て",
     "Description": ""
   }
 }
