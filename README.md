@@ -22,7 +22,7 @@ A [Dalamud](https://github.com/goatcorp/Dalamud) plugin for **Final Fantasy XIV*
 ## Requirements
 
 - FFXIV with [XIVLauncher](https://github.com/goatcorp/FFXIVQuickLauncher) and Dalamud **API 15**
-- An API key for your chosen provider
+- An API key for your chosen provider, or a LiteLLM proxy (optionally behind Cloudflare Access)
 
 ---
 
@@ -55,7 +55,8 @@ This URL is **permanent** — it always points to the latest release.
 | Action | How |
 |---|---|
 | Open settings | `/aetherglot` or Dalamud's ⚙ → *AetherGlot Settings* |
-| Configure provider | Select provider, choose/type model, enter API key |
+| Configure connection | Choose Direct / LiteLLM / OpenAI-compatible, enter the URL, key and models |
+| Test the connection | `/aetherglot test` |
 | Enable translation | Check *Enable inbound translation* (and/or outbound) |
 | Choose channels | Tick the chat channels you want translated |
 | Skip same-language | Off by default — uncheck *Translate even if message is in client language* to see all messages regardless |
@@ -65,6 +66,8 @@ Echo messages appear in-game as:
 ```
 [AetherGlot] PlayerName [EN]: Translated text here
 ```
+Parts that could not be translated are kept in the original language and marked like `‹zorp strat›`.
+When a response is discarded (invalid / refusal), nothing is echoed: the original message is already in the chat log.
 
 ### Outbound send command
 
@@ -101,30 +104,70 @@ The compiled plugin (`AetherGlot.dll`) and locale files are output to `AetherGlo
 
 ---
 
-## Supported Providers
+## Connection
 
-| Provider | Default model |
+| Type | Details |
 |---|---|
-| OpenAI | `gpt-4o-mini` |
-| Google Gemini | `gemini-2.0-flash` |
-| Anthropic Claude | `claude-3-5-haiku-latest` |
-| Custom (Ollama etc.) | User-specified |
+| **Direct** | OpenAI, Google Gemini or Anthropic Claude. Endpoints are editable in the settings. |
+| **LiteLLM proxy** | OpenAI-compatible `/v1/chat/completions` and `/v1/models`, virtual key sent as `Authorization: Bearer`, user tag sent in the `user` field. |
+| **OpenAI-compatible** | Ollama, LM Studio, vLLM, etc. |
 
-All model names and endpoints are **read from configuration** — nothing is hardcoded.
+- **Cloudflare Access (service token)**: for LiteLLM / OpenAI-compatible, `CF-Access-Client-Id` and `CF-Access-Client-Secret` are added to every request (chat, model list, connection test). Extra headers can be configured as name/value pairs. A login redirect (302) or an Access 403 page is reported as "rejected by Cloudflare Access" instead of being parsed as JSON.
+- **Models**: inbound (fast) and outbound (high quality) models are set separately. Nothing is hardcoded; with LiteLLM the list can be fetched from `/v1/models`.
+- **JSON output**: `response_format` is sent by default. If a model rejects it, AetherGlot falls back to prompt-only JSON instructions and remembers that per model.
+
+### Connection test
+
+`/aetherglot test` (or the button in the settings) checks, in order:
+
+1. Cloudflare Access is passed
+2. LiteLLM authentication
+3. Model list (and whether the configured models are in it)
+4. JSON response from the inbound and outbound models
+
+| Failure | What to check |
+|---|---|
+| 302 / 403 from Access | The Access policy must use **Service Auth**, and the service token must be correct. |
+| 401 | The LiteLLM virtual key is invalid or expired. |
+| Model not found | The virtual key must be allowed to use that model. |
+
+`/aetherglot models` prints the model list.
+
+### Translation pipeline
+
+The model must answer with a fixed JSON schema (`status`, `lang`, `translation`, `terms`, `unresolved`, `senses`).
+Parts it cannot translate go into `unresolved` and are shown in the original language; it is told never to refuse or apologise.
+A response is discarded and the original message is shown when the JSON is invalid twice (one retry), when it does not match the schema,
+when the "translation" is a refusal/apology or far longer than the source, or when placeholders were dropped.
+Identical messages are served from a size-limited cache.
 
 ---
 
 ## Security
 
-- API keys are stored in Dalamud's standard `Configuration.json` (per-user, local machine only).
-- `Configuration.json` is excluded from version control via `.gitignore`.
-- Never commit your API key to a public repository.
+- API keys, the LiteLLM virtual key, the Cloudflare Access Client ID / Secret and extra header values are stored in **Windows Credential Manager** (targets `AetherGlot:*`), never in `Configuration.json`.
+- Plaintext keys from older versions are moved to Credential Manager on first start and then removed from `Configuration.json`.
+- Secrets are masked in logs, error messages and the connection test output.
+
+---
+
+## Integration tests
+
+The integration tests call real APIs and are skipped unless their environment variables are set.
+
+- **Local**: `./Run-IntegrationTests.ps1 -Provider LiteLLM` injects the values from 1Password (`integration.op-env`, references only).
+- **CI**: run the *Integration Tests* workflow manually. It reads the same variable names from the GitHub environment `integration`
+  (secrets: `AETHERGLOT_LITELLM_KEY`, `AETHERGLOT_CF_CLIENT_ID`, `AETHERGLOT_CF_CLIENT_SECRET`;
+  variables: `AETHERGLOT_LITELLM_BASE_URL`, `AETHERGLOT_LITELLM_INBOUND_MODEL`, `AETHERGLOT_LITELLM_OUTBOUND_MODEL`, `AETHERGLOT_LITELLM_USER_TAG`).
+  If the Access policy restricts source IPs, GitHub-hosted runners will be rejected.
+
+Unit tests run on every push / pull request (`.github/workflows/tests.yml`).
 
 ---
 
 ## Localization (i18n)
 
-Locale files live in `AetherGlot/loc/` as `AetherGlot_<lang>.json`.  
+Locale files live in `AetherGlot/loc/` as `<lang>.json`.  
 The English file (`en.json`) is the source; community translations are welcomed via pull request.  
 A Crowdin → GitHub Actions pipeline for automatic PR generation is planned.
 
@@ -133,16 +176,21 @@ A Crowdin → GitHub Actions pipeline for automatic PR generation is planned.
 ## Architecture
 
 ```
-Plugin.cs
- └─ ChatTranslationService
-      └─ ITranslatorProvider (interface)
-           ├─ OpenAIProvider
-           ├─ GeminiProvider
-           ├─ ClaudeProvider
-           └─ CustomEndpointProvider
+AetherGlot (plugin, Dalamud)               AetherGlot.Core (no Dalamud dependency, unit-tested)
+ Plugin.cs                                  Connection/  ConnectionSettings(+Builder), LlmHttpSender,
+  ├─ ChatTranslationService ───────────────►             AccessResponseClassifier, RequestDecorator,
+  ├─ Windows/ConfigWindow, SendPreviewWindow             ConnectionDiagnostics
+  └─ Security/CredentialManagerSecretStore   Providers/   ITranslatorProvider
+                                                          ├─ OpenAICompatibleProvider ─ LiteLlmProvider
+                                                          ├─ ClaudeProvider
+                                                          └─ GeminiProvider
+                                             Translation/ TranslationPipeline, PromptBuilder,
+                                                          ResponseParser, ResponseValidator,
+                                                          RefusalDetector, Rehydrator, TranslationCache
+                                             Security/    ISecretStore, SecretRedactor, LegacySecretsMigrator
 ```
 
-To add a new LLM provider: implement `ITranslatorProvider`, add a case in `ProviderFactory`, and add default model suggestions.
+To add a new LLM backend: implement `ITranslatorProvider` in Core (honour `LlmRequest.JsonMode`) and add a case in `TranslatorProviderFactory`.
 
 ---
 

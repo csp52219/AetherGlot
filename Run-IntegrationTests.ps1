@@ -12,19 +12,24 @@
       - integration.op-env updated to point at your vault items
 
 .PARAMETER Provider
-    Limit tests to a specific provider: Claude, OpenAI, Gemini, or All (default).
+    Limit tests to a specific backend: LiteLLM, Claude, OpenAI, Gemini, or All (default).
+    LiteLLM also covers Cloudflare Access when AETHERGLOT_CF_CLIENT_ID / _SECRET are set.
 
-.PARAMETER Verbose
+    The same tests run in CI from .github/workflows/integration.yml (GitHub environment
+    "integration"); this script is for local runs with 1Password.
+
+.PARAMETER Detailed
     Pass --verbosity detailed to dotnet test.
 
 .EXAMPLE
     .\Run-IntegrationTests.ps1
+    .\Run-IntegrationTests.ps1 -Provider LiteLLM
     .\Run-IntegrationTests.ps1 -Provider Claude
     .\Run-IntegrationTests.ps1 -Provider OpenAI -Detailed
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet("All", "Claude", "OpenAI", "Gemini")]
+    [ValidateSet("All", "LiteLLM", "Claude", "OpenAI", "Gemini")]
     [string] $Provider = "All",
 
     [switch] $Detailed
@@ -48,6 +53,7 @@ if (-not (Test-Path $envFile)) {
 
 # Build the filter expression
 $filter = switch ($Provider) {
+    "LiteLLM" { "Category=Integration&FullyQualifiedName~LiteLlm" }
     "Claude" { "Category=Integration&FullyQualifiedName~Claude" }
     "OpenAI" { "Category=Integration&FullyQualifiedName~OpenAI" }
     "Gemini" { "Category=Integration&FullyQualifiedName~Gemini" }

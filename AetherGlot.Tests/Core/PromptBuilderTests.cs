@@ -1,4 +1,4 @@
-using AetherGlot.Core;
+using AetherGlot.Core.Translation;
 using Xunit;
 
 namespace AetherGlot.Tests.Core;
@@ -7,71 +7,59 @@ public sealed class PromptBuilderTests
 {
     private readonly IPromptBuilder sut = new PromptBuilder();
 
-    // ── Inbound ──────────────────────────────────────────────────────────────
+    private static InboundRequest Inbound(string lang = "Japanese") =>
+        new("{{at0}} opo pls", new Dictionary<string, string> { ["at0"] = "【こんにちは！】" }, lang, "ja");
 
     [Theory]
     [InlineData("Japanese")]
     [InlineData("English")]
     [InlineData("German")]
     [InlineData("French")]
-    public void BuildInboundSystemPrompt_ContainsTargetLanguage(string lang)
-    {
-        var prompt = sut.BuildInboundSystemPrompt(lang);
+    public void InboundSystem_ContainsTargetLanguage(string lang)
+        => Assert.Contains(lang, sut.BuildInboundSystemPrompt(Inbound(lang)));
 
-        Assert.Contains(lang, prompt);
+    [Fact]
+    public void InboundSystem_ContainsSchemaAndRules()
+    {
+        var p = sut.BuildInboundSystemPrompt(Inbound());
+        Assert.Contains(PromptBuilder.InboundSchema, p);
+        Assert.Contains("{{at0}}", p);
+        Assert.Contains("unresolved", p);
+        Assert.Contains("Never refuse", p);
+        Assert.Contains("\"skip\"", p);
     }
 
     [Fact]
-    public void BuildInboundSystemPrompt_ContainsJsonFormatInstruction()
+    public void InboundUser_IsJson_AndOmitsEmptySections()
     {
-        var prompt = sut.BuildInboundSystemPrompt("English");
-
-        Assert.Contains("lang", prompt, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("text", prompt, StringComparison.OrdinalIgnoreCase);
+        var p = sut.BuildInboundUserPrompt(Inbound());
+        Assert.Equal("""{"message":"{{at0}} opo pls"}""", p);
     }
 
     [Fact]
-    public void BuildInboundSystemPrompt_MentionsJsonOnly()
+    public void InboundUser_IncludesOnlyGivenGlossaryAndContext()
     {
-        var prompt = sut.BuildInboundSystemPrompt("English");
-
-        Assert.Contains("JSON", prompt, StringComparison.OrdinalIgnoreCase);
-    }
-
-    // ── Outbound ─────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void BuildOutboundSystemPrompt_ContainsTargetLanguage()
-    {
-        var prompt = sut.BuildOutboundSystemPrompt("Japanese", string.Empty);
-
-        Assert.Contains("Japanese", prompt);
-    }
-
-    [Fact]
-    public void BuildOutboundSystemPrompt_IncludesCustomPrompt_WhenProvided()
-    {
-        const string custom = "You are a casual gamer.";
-        var prompt = sut.BuildOutboundSystemPrompt("English", custom);
-
-        Assert.Contains(custom, prompt);
+        var req = Inbound() with
+        {
+            Hints    = new TranslationHints(InCombat: false, Location: "Limsa Lominsa"),
+            Glossary = [new GlossaryHint("opo", ["壱の型：魔猿"]), new GlossaryHint("bio", ["バイオ（技）", "トイレ（離席）"])],
+        };
+        var p = sut.BuildInboundUserPrompt(req);
+        Assert.Contains("\"in_combat\":false", p);
+        Assert.Contains("Limsa Lominsa", p);
+        Assert.Contains("\"dst\":\"壱の型：魔猿\"", p);
+        Assert.Contains("\"senses\":[\"バイオ（技）\",\"トイレ（離席）\"]", p);
+        Assert.DoesNotContain("party_jobs", p);
     }
 
     [Fact]
-    public void BuildOutboundSystemPrompt_EmptyCustomPrompt_StillContainsTargetLanguage()
+    public void Outbound_IncludesCustomPromptToneAndLimit()
     {
-        var prompt = sut.BuildOutboundSystemPrompt("German", string.Empty);
-
-        Assert.Contains("German", prompt);
-    }
-
-    [Fact]
-    public void BuildOutboundSystemPrompt_DoesNotContainJsonInstruction()
-    {
-        // Outbound should return plain text, not JSON
-        var prompt = sut.BuildOutboundSystemPrompt("English", string.Empty);
-
-        // The word "JSON" should not appear in the outbound prompt
-        Assert.DoesNotContain("JSON", prompt, StringComparison.OrdinalIgnoreCase);
+        var req = new OutboundRequest("こんにちは", "Japanese", "English", OutboundTone.Short, "You are a casual gamer.");
+        var p = sut.BuildOutboundSystemPrompt(req, 450);
+        Assert.Contains("You are a casual gamer.", p);
+        Assert.Contains("short", p);
+        Assert.Contains("450", p);
+        Assert.Contains(PromptBuilder.OutboundSchema, p);
     }
 }

@@ -1,0 +1,28 @@
+name: Unit Tests
+
+# Fast checks for every push / PR: builds AetherGlot.Core and runs the unit tests.
+# Integration tests are skipped here (no secrets); see integration.yml.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Run unit tests
+        run: dotnet test AetherGlot.Tests/AetherGlot.Tests.csproj --filter "Category!=Integration"

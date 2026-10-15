@@ -5,17 +5,17 @@ namespace AetherGlot;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    /// <summary>v1: plaintext ApiKeys + single provider/model. v2: ConnectionConfig + secret store.</summary>
+    public const int CurrentVersion = 2;
 
-    // --- Provider ---
-    public string SelectedProvider { get; set; } = "OpenAI";
-    public string SelectedModel { get; set; } = string.Empty;
-    public string CustomEndpoint { get; set; } = string.Empty;
+    public int Version { get; set; } = CurrentVersion;
 
-    // API keys are keyed by provider name and never committed to source control
-    public Dictionary<string, string> ApiKeys { get; set; } = new();
+    // --- Connection (no secrets; see ISecretStore) ---
+    public ConnectionConfig Connection { get; set; } = new();
 
-    // --- Translation ---
+    // --- Translation behaviour ---
+    public TranslationConfig Translation { get; set; } = new();
+
     public bool InboundEnabled { get; set; } = true;
     public bool OutboundEnabled { get; set; } = false;
 
@@ -23,7 +23,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool SkipOwnMessages { get; set; } = true;
 
     // When false (default), messages already in the client language are skipped.
-    // When true, all messages are translated regardless of detected language.
+    // When true, they are still sent to the model (it answers "skip" and nothing is shown).
     public bool AlwaysTranslate { get; set; } = false;
 
     // Use List instead of HashSet for JSON-serialisation compatibility
@@ -48,6 +48,12 @@ public sealed class Configuration : IPluginConfiguration
         "- Keep it very casual. Avoid formal grammar or structures.\n" +
         "- Actively use gaming slangs: 'i' instead of 'I', 'btw', 'ty', 'gg', 'brb', 'thx', 'omw', etc.\n" +
         "- Avoid capitalizing words unless necessary. Do not end sentences with periods.";
+
+    // --- v1 settings, read only for migration (ConfigurationMigrator clears them) ---
+    public string? SelectedProvider { get; set; }
+    public string? SelectedModel { get; set; }
+    public string? CustomEndpoint { get; set; }
+    public Dictionary<string, string>? ApiKeys { get; set; }
 
     [NonSerialized]
     private IDalamudPluginInterface? pluginInterface;
