@@ -134,8 +134,12 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         var settingsLabel = Tr.Get("LogSettingsBtn", "Settings");
         var pad   = ImGui.GetStyle().FramePadding.X * 2;
         var width = ImGui.CalcTextSize(clearLabel).X + ImGui.CalcTextSize(settingsLabel).X + pad * 2 + ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SameLine();
-        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - width));
+        // Stay on this row only if the buttons fit; otherwise wrap them to the next one
+        var right   = ImGui.GetWindowContentRegionMax().X;
+        var lastEnd = ImGui.GetItemRectMax().X - ImGui.GetWindowPos().X + ImGui.GetScrollX();
+        if (lastEnd + ImGui.GetStyle().ItemSpacing.X + width <= right)
+            ImGui.SameLine();
+        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), right - width));
         if (ImGui.SmallButton(clearLabel) && ImGui.GetIO().KeyShift)
         {
             plugin.TranslationLog.Clear();
