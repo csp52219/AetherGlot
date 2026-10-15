@@ -239,6 +239,14 @@
     "Message": "Les clés et secrets sont stockés dans le Gestionnaire d'identification Windows, pas dans le fichier de paramètres.",
     "Description": ""
   },
+  "SaveFailed": {
+    "Message": "! Enregistrement impossible : {0} (voir dalamud.log)",
+    "Description": ""
+  },
+  "SaveDone": {
+    "Message": "✓ Enregistré ({0:HH:mm:ss})",
+    "Description": ""
+  },
   "SaveBtn": {
     "Message": "Enregistrer",
     "Description": ""
@@ -297,6 +305,34 @@
   },
   "HelpSend": {
     "Message": "traduire et envoyer",
+    "Description": ""
+  },
+  "DiagSection": {
+    "Message": "Dépannage",
+    "Description": ""
+  },
+  "DiagWhere": {
+    "Message": "Démarrage, envois, enregistrements, avertissements et erreurs sont toujours écrits dans dalamud.log (ouvrir avec /xllog).",
+    "Description": ""
+  },
+  "DiagVerbose": {
+    "Message": "Journal détaillé : destination et résultat de chaque message",
+    "Description": ""
+  },
+  "DiagText": {
+    "Message": "Écrire aussi le texte et les noms (chat des autres joueurs)",
+    "Description": ""
+  },
+  "DiagCopy": {
+    "Message": "Copier le diagnostic",
+    "Description": ""
+  },
+  "DiagCopied": {
+    "Message": "✓ Copié. Collez-le dans votre rapport de bug (aucune clé ni secret inclus).",
+    "Description": ""
+  },
+  "DiagCopyHint": {
+    "Message": "Résumé des paramètres, dernier test de connexion et erreurs récentes ; jamais de clés ni de secrets.",
     "Description": ""
   },
   "ModeLabel": {
@@ -641,6 +677,10 @@
   },
   "ShowBtn": {
     "Message": "Afficher",
+    "Description": ""
+  },
+  "SaveSettingsFile": {
+    "Message": "fichier de paramètres",
     "Description": ""
   },
   "ConfigWindowTitle": {
@@ -1333,6 +1373,26 @@
   },
   "SendTonePolite": {
     "Message": "Poli",
+    "Description": ""
+  },
+  "LogHiddenByFilter": {
+    "Message": "{0} masqués par le filtre",
+    "Description": ""
+  },
+  "LogShowAll": {
+    "Message": "Tout afficher",
+    "Description": ""
+  },
+  "LogNotLogged": {
+    "Message": "Absents de ce journal : {0}",
+    "Description": ""
+  },
+  "LogNotLoggedTip": {
+    "Message": "Ces canaux affichent les traductions ailleurs. Modifiable dans Paramètres → Affichage.",
+    "Description": ""
+  },
+  "LogOpenDisplay": {
+    "Message": "Paramètres d'affichage",
     "Description": ""
   },
   "LogShowOriginal": {

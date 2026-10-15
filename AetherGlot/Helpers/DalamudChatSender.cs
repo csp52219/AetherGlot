@@ -89,6 +89,7 @@ public sealed unsafe class DalamudChatSender : IChatSender
         {
             str->SanitizeString(Allowed, null);
             uiModule->ProcessChatBoxEntry(str, nint.Zero, false);
+            log.Information("[AetherGlot] Sent a message: {Command} ({Bytes} bytes).", line.Split(' ', 2)[0], (int)str->Length);
         }
         finally
         {

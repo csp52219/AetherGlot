@@ -4,19 +4,28 @@ using Dalamud.Interface.Windowing;
 
 namespace AetherGlot.Windows;
 
+/// <summary>Tabs of the settings window (for opening it at a given tab).</summary>
+public enum SettingsTab { General, Connection, Ai, Channels, Dictionary, Display }
+
 /// <summary>⑤ Settings: General / Connection / AI & translation / Channels / Dictionary / Display.</summary>
 public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 {
-    private enum Tab { General, Connection, Ai, Channels, Dictionary, Display }
+    private static readonly TimeSpan SavedNoticeTime = TimeSpan.FromSeconds(4);
 
     private readonly Plugin plugin;
     private readonly Configuration config;
-    private Tab? selectTab;
+    private SettingsTab? selectTab;
+
+    // Result of the last save: shown next to the Save button
+    private DateTimeOffset? savedAt;
+    private IReadOnlyList<string> saveFailures = [];
+    private DateTimeOffset? copiedAt;
 
     // Secret edit buffers, keyed by secret name; loaded lazily from the secret store
     private readonly Dictionary<string, string> secretBuffers = new(StringComparer.Ordinal);
     private readonly HashSet<string> dirtySecrets = new(StringComparer.Ordinal);
     private readonly HashSet<string> visibleSecrets = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> secretLabels = new(StringComparer.Ordinal);
 
     // Extra headers being edited (name + value buffer); values are secrets
     private List<(string Name, string Value)> headerRows = [];
@@ -94,17 +103,24 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         headersDirty = false;
     }
 
+    /// <summary>Opens the window at <paramref name="tab"/>.</summary>
+    public void OpenAt(SettingsTab tab)
+    {
+        selectTab = tab;
+        IsOpen = true;
+    }
+
     public override void Draw()
     {
         var footer = ImGui.GetFrameHeightWithSpacing() + 6;
         if (ImGui.BeginTabBar("##settingsTabs"))
         {
-            DrawTab(Tab.General,    Loc.Localize("TabGeneral", "General"),            DrawGeneralTab, footer);
-            DrawTab(Tab.Connection, Loc.Localize("TabConnection", "Connection"),      DrawConnectionTab, footer);
-            DrawTab(Tab.Ai,         Loc.Localize("TabAi", "AI & translation"),        DrawAiTab, footer);
-            DrawTab(Tab.Channels,   Loc.Localize("TabChannels", "Channels"),          DrawChannelsTab, footer);
-            DrawTab(Tab.Dictionary, Loc.Localize("TabDictionary", "Dictionary"),      DrawDictionaryTab, footer);
-            DrawTab(Tab.Display,    Loc.Localize("TabDisplay", "Display"),            DrawDisplayTab, footer);
+            DrawTab(SettingsTab.General,    Tr.Get("TabGeneral", "General"),            DrawGeneralTab, footer);
+            DrawTab(SettingsTab.Connection, Tr.Get("TabConnection", "Connection"),      DrawConnectionTab, footer);
+            DrawTab(SettingsTab.Ai,         Tr.Get("TabAi", "AI & translation"),        DrawAiTab, footer);
+            DrawTab(SettingsTab.Channels,   Tr.Get("TabChannels", "Channels"),          DrawChannelsTab, footer);
+            DrawTab(SettingsTab.Dictionary, Tr.Get("TabDictionary", "Dictionary"),      DrawDictionaryTab, footer);
+            DrawTab(SettingsTab.Display,    Tr.Get("TabDisplay", "Display"),            DrawDisplayTab, footer);
             ImGui.EndTabBar();
         }
         selectTab = null;
@@ -113,7 +129,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         DrawFooter();
     }
 
-    private void DrawTab(Tab tab, string label, Action body, float footer)
+    private void DrawTab(SettingsTab tab, string label, Action body, float footer)
     {
         var flags = selectTab == tab ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
         if (!ImGui.BeginTabItem($"{label}###tab{tab}", flags)) return;
@@ -125,10 +141,33 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private void DrawFooter()
     {
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("SecretsFooter", "Keys and secrets are stored in Windows Credential Manager, not in the settings file."));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("SecretsFooter", "Keys and secrets are stored in Windows Credential Manager, not in the settings file."));
+
+        // Save result, right before the button: failures stay until the next save
+        string? status = null;
+        var color = Theme.Ok;
+        if (saveFailures.Count > 0)
+        {
+            status = string.Format(Tr.Get("SaveFailed", "! Could not save: {0} (see dalamud.log)"), string.Join(", ", saveFailures));
+            color  = Theme.Warn;
+        }
+        else if (savedAt is { } at && DateTimeOffset.Now - at < SavedNoticeTime)
+        {
+            status = string.Format(Tr.Get("SaveDone", "✓ Saved ({0:HH:mm:ss})"), at.ToLocalTime());
+        }
+
+        var buttonWidth = ImGui.CalcTextSize(Tr.Get("SaveBtn", "Save")).X + ImGui.GetStyle().FramePadding.X * 2;
+        var right = ImGui.GetWindowContentRegionMax().X;
+        if (status is not null)
+        {
+            ImGui.SameLine();
+            var statusWidth = ImGui.CalcTextSize(status).X;
+            ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), right - buttonWidth - statusWidth - 16));
+            ImGui.TextColored(color, status);
+        }
         ImGui.SameLine();
-        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - 80));
-        if (AccentButton(Loc.Localize("SaveBtn", "Save")))
+        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), right - buttonWidth));
+        if (AccentButton(Tr.Get("SaveBtn", "Save")))
             SaveAll();
     }
 
@@ -137,44 +176,77 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     private void DrawGeneralTab()
     {
         var inbound = config.InboundEnabled;
-        if (ImGui.Checkbox(Loc.Localize("InboundLabel", "Translate received messages"), ref inbound)) config.InboundEnabled = inbound;
+        if (ImGui.Checkbox(Tr.Get("InboundLabel", "Translate received messages"), ref inbound)) config.InboundEnabled = inbound;
         var outbound = config.OutboundEnabled;
-        if (ImGui.Checkbox(Loc.Localize("OutboundLabel", "Enable /agsend (translate before sending)"), ref outbound)) config.OutboundEnabled = outbound;
+        if (ImGui.Checkbox(Tr.Get("OutboundLabel", "Enable /agsend (translate before sending)"), ref outbound)) config.OutboundEnabled = outbound;
         var skipOwn = config.SkipOwnMessages;
-        if (ImGui.Checkbox(Loc.Localize("SkipOwnLabel", "Skip my own messages"), ref skipOwn)) config.SkipOwnMessages = skipOwn;
+        if (ImGui.Checkbox(Tr.Get("SkipOwnLabel", "Skip my own messages"), ref skipOwn)) config.SkipOwnMessages = skipOwn;
 
         ImGui.Spacing();
-        if (ImGui.Button(Loc.Localize("OpenLogBtn", "Open translation log")))
+        if (ImGui.Button(Tr.Get("OpenLogBtn", "Open translation log")))
             plugin.OpenLog();
 
-        Section(Loc.Localize("OutboundSection", "Send (/agsend)"));
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("OutboundPromptHint",
+        Section(Tr.Get("OutboundSection", "Send (/agsend)"));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("OutboundPromptHint",
             "Extra style instructions for the model (optional), e.g. \"Use British spelling\". Short / normal / polite is chosen in the send window."));
         var prompt = config.OutboundPrompt;
         if (ImGui.InputTextMultiline("##outboundprompt", ref prompt, 2048, new Vector2(-1f, 80f)))
             config.OutboundPrompt = prompt;
-        if (ImGui.Button(Loc.Localize("ResetPromptBtn", "Clear")))
+        if (ImGui.Button(Tr.Get("ResetPromptBtn", "Clear")))
             config.OutboundPrompt = OutboundPromptDefaults.Default;
 
         var current = Channels.FirstOrDefault(c => c.Type == config.DefaultOutboundChannel);
-        Label(Loc.Localize("DefaultOutboundChannelLabel", "Default send channel"));
+        Label(Tr.Get("DefaultOutboundChannelLabel", "Default send channel"));
         ImGui.SetNextItemWidth(200);
-        if (ImGui.BeginCombo("##defaultchannel", current.Fallback is null ? config.DefaultOutboundChannel.ToString() : Loc.Localize(current.LocKey, current.Fallback)))
+        if (ImGui.BeginCombo("##defaultchannel", current.Fallback is null ? config.DefaultOutboundChannel.ToString() : Tr.Get(current.LocKey, current.Fallback)))
         {
             foreach (var (type, locKey, fallback) in Channels.Where(c => c.Type != XivChatType.TellIncoming))
             {
-                if (ImGui.Selectable(Loc.Localize(locKey, fallback), type == config.DefaultOutboundChannel))
+                if (ImGui.Selectable(Tr.Get(locKey, fallback), type == config.DefaultOutboundChannel))
                     config.DefaultOutboundChannel = type;
             }
             ImGui.EndCombo();
         }
 
-        Section(Loc.Localize("CommandHelpSection", "Commands"));
-        ImGui.TextColored(Theme.TextDim, "/aetherglot            " + Loc.Localize("HelpSettings", "settings"));
-        ImGui.TextColored(Theme.TextDim, "/aetherglot log        " + Loc.Localize("HelpLog", "translation log"));
-        ImGui.TextColored(Theme.TextDim, "/aetherglot test       " + Loc.Localize("HelpTest", "connection test"));
-        ImGui.TextColored(Theme.TextDim, "/aetherglot lookup …   " + Loc.Localize("HelpLookup", "show dictionary hits"));
-        ImGui.TextColored(Theme.TextDim, "/agsend [p|fc|l1…] …   " + Loc.Localize("HelpSend", "translate and send"));
+        Section(Tr.Get("CommandHelpSection", "Commands"));
+        ImGui.TextColored(Theme.TextDim, "/aetherglot            " + Tr.Get("HelpSettings", "settings"));
+        ImGui.TextColored(Theme.TextDim, "/aetherglot log        " + Tr.Get("HelpLog", "translation log"));
+        ImGui.TextColored(Theme.TextDim, "/aetherglot test       " + Tr.Get("HelpTest", "connection test"));
+        ImGui.TextColored(Theme.TextDim, "/aetherglot lookup …   " + Tr.Get("HelpLookup", "show dictionary hits"));
+        ImGui.TextColored(Theme.TextDim, "/agsend [p|fc|l1…] …   " + Tr.Get("HelpSend", "translate and send"));
+
+        DrawDiagnosticsSection();
+    }
+
+    private void DrawDiagnosticsSection()
+    {
+        var d = config.Diagnostics;
+        Section(Tr.Get("DiagSection", "Troubleshooting"));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("DiagWhere",
+            "Start-up, sends, saves, warnings and errors are always written to dalamud.log (open it with /xllog)."));
+
+        var verbose = d.VerboseLogging;
+        if (ImGui.Checkbox(Tr.Get("DiagVerbose", "Detailed log: route and result of every message"), ref verbose))
+            d.VerboseLogging = verbose;
+
+        var disabled = !d.VerboseLogging;
+        if (disabled) ImGui.BeginDisabled();
+        var text = d.LogMessageText;
+        if (ImGui.Checkbox(Tr.Get("DiagText", "Also write message text and names (other players' chat)"), ref text))
+            d.LogMessageText = text;
+        if (disabled) ImGui.EndDisabled();
+
+        ImGui.Spacing();
+        if (ImGui.Button(Tr.Get("DiagCopy", "Copy diagnostics")))
+        {
+            ImGui.SetClipboardText(DiagnosticsSummary.Build(plugin));
+            copiedAt = DateTimeOffset.Now;
+        }
+        ImGui.SameLine();
+        if (copiedAt is { } at && DateTimeOffset.Now - at < SavedNoticeTime)
+            ImGui.TextColored(Theme.Ok, Tr.Get("DiagCopied", "✓ Copied. Paste it into your bug report (no keys or secrets included)."));
+        else
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("DiagCopyHint", "Settings summary, last connection test and recent errors; keys and secrets are never included."));
     }
 
     // ═════ Connection ════════════════════════════════════════════════════
@@ -199,10 +271,10 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     {
         var c = config.Connection;
 
-        Label(Loc.Localize("ModeLabel", "Connection"));
+        Label(Tr.Get("ModeLabel", "Connection"));
         foreach (var (mode, locKey, fallback) in Modes)
         {
-            if (Toggle(Loc.Localize(locKey, fallback), c.Mode == mode)) c.Mode = mode;
+            if (Toggle(Tr.Get(locKey, fallback), c.Mode == mode)) c.Mode = mode;
             ImGui.SameLine(0, 2);
         }
         ImGui.NewLine();
@@ -210,8 +282,8 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         switch (c.Mode)
         {
             case ConnectionMode.Direct:
-                Section(Loc.Localize("DirectSection", "Vendor API"));
-                Label(Loc.Localize("ProviderLabel", "Provider"));
+                Section(Tr.Get("DirectSection", "Vendor API"));
+                Label(Tr.Get("ProviderLabel", "Provider"));
                 ImGui.SetNextItemWidth(-1);
                 if (ImGui.BeginCombo("##provider", c.DirectProvider.ToString()))
                 {
@@ -221,26 +293,26 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
                 }
                 var key = c.DirectProvider.ToString();
                 var endpoint = c.DirectEndpoints.TryGetValue(key, out var e) ? e : string.Empty;
-                if (LabeledInput(Loc.Localize("EndpointLabel", "Endpoint"), "##endpoint", ref endpoint)) c.DirectEndpoints[key] = endpoint;
-                SecretInput(Loc.Localize("ApiKeyLabel", "API key"), SecretNames.DirectApiKey(key));
+                if (LabeledInput(Tr.Get("EndpointLabel", "Endpoint"), "##endpoint", ref endpoint)) c.DirectEndpoints[key] = endpoint;
+                SecretInput(Tr.Get("ApiKeyLabel", "API key"), SecretNames.DirectApiKey(key));
                 break;
 
             case ConnectionMode.LiteLlm:
                 Section("LiteLLM");
                 var liteUrl = c.LiteLlmBaseUrl;
-                if (LabeledInput(Loc.Localize("BaseUrlLabel", "Base URL"), "##liteurl", ref liteUrl, "https://llm.example.com")) c.LiteLlmBaseUrl = liteUrl;
-                SecretInput(Loc.Localize("VirtualKeyLabel", "Virtual key"), SecretNames.LiteLlmKey);
+                if (LabeledInput(Tr.Get("BaseUrlLabel", "Base URL"), "##liteurl", ref liteUrl, "https://llm.example.com")) c.LiteLlmBaseUrl = liteUrl;
+                SecretInput(Tr.Get("VirtualKeyLabel", "Virtual key"), SecretNames.LiteLlmKey);
                 var tag = c.UserTag;
-                if (LabeledInput(Loc.Localize("UserTagLabel", "User tag"), "##usertag", ref tag)) c.UserTag = tag;
+                if (LabeledInput(Tr.Get("UserTagLabel", "User tag"), "##usertag", ref tag)) c.UserTag = tag;
                 break;
 
             case ConnectionMode.OpenAICompatible:
-                Section(Loc.Localize("ModeOpenAICompatible", "OpenAI-compatible"));
+                Section(Tr.Get("ModeOpenAICompatible", "OpenAI-compatible"));
                 var compatUrl = c.OpenAICompatibleBaseUrl;
-                if (LabeledInput(Loc.Localize("BaseUrlLabel", "Base URL"), "##compaturl", ref compatUrl, "http://localhost:11434")) c.OpenAICompatibleBaseUrl = compatUrl;
-                SecretInput(Loc.Localize("ApiKeyOptionalLabel", "API key (optional)"), SecretNames.OpenAICompatibleKey);
+                if (LabeledInput(Tr.Get("BaseUrlLabel", "Base URL"), "##compaturl", ref compatUrl, "http://localhost:11434")) c.OpenAICompatibleBaseUrl = compatUrl;
+                SecretInput(Tr.Get("ApiKeyOptionalLabel", "API key (optional)"), SecretNames.OpenAICompatibleKey);
                 var tag2 = c.UserTag;
-                if (LabeledInput(Loc.Localize("UserTagLabel", "User tag"), "##usertag2", ref tag2)) c.UserTag = tag2;
+                if (LabeledInput(Tr.Get("UserTagLabel", "User tag"), "##usertag2", ref tag2)) c.UserTag = tag2;
                 break;
         }
 
@@ -252,19 +324,19 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private void DrawCloudflareAccess(ConnectionConfig c)
     {
-        Section(Loc.Localize("CfSection", "Cloudflare Access (service token)"));
+        Section(Tr.Get("CfSection", "Cloudflare Access (service token)"));
         var cf = c.CloudflareAccessEnabled;
-        if (ImGui.Checkbox(Loc.Localize("CfEnabledLabel", "Use") + "##cf", ref cf)) c.CloudflareAccessEnabled = cf;
+        if (ImGui.Checkbox(Tr.Get("CfEnabledLabel", "Use") + "##cf", ref cf)) c.CloudflareAccessEnabled = cf;
         if (c.CloudflareAccessEnabled)
         {
             SecretInput("Client ID", SecretNames.CfClientId);
             SecretInput("Client Secret", SecretNames.CfClientSecret);
-            Label(Loc.Localize("CfHeadersLabel", "Headers sent"));
+            Label(Tr.Get("CfHeadersLabel", "Headers sent"));
             ImGui.TextColored(Theme.TextDim, $"{RequestDecorator.CfClientIdHeader} / {RequestDecorator.CfClientSecretHeader}");
         }
 
-        Label(Loc.Localize("ExtraHeadersLabel", "Extra headers"));
-        if (ImGui.SmallButton(Loc.Localize("AddHeaderBtn", "+ Add header")))
+        Label(Tr.Get("ExtraHeadersLabel", "Extra headers"));
+        if (ImGui.SmallButton(Tr.Get("AddHeaderBtn", "+ Add header")))
         {
             headerRows.Add((string.Empty, string.Empty));
             headersDirty = true;
@@ -276,10 +348,10 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
             ImGui.Dummy(new Vector2(LabelWidth, 0));
             ImGui.SameLine();
             ImGui.SetNextItemWidth(150);
-            if (ImGui.InputTextWithHint("##hname", Loc.Localize("HeaderName", "Name"), ref name, 128)) headersDirty = true;
+            if (ImGui.InputTextWithHint("##hname", Tr.Get("HeaderName", "Name"), ref name, 128)) headersDirty = true;
             ImGui.SameLine();
             ImGui.SetNextItemWidth(Math.Max(80, ImGui.GetContentRegionAvail().X - 30));
-            if (ImGui.InputTextWithHint("##hvalue", Loc.Localize("HeaderValue", "Value"), ref value, 512, ImGuiInputTextFlags.Password)) headersDirty = true;
+            if (ImGui.InputTextWithHint("##hvalue", Tr.Get("HeaderValue", "Value"), ref value, 512, ImGuiInputTextFlags.Password)) headersDirty = true;
             headerRows[i] = (name, value);
             ImGui.SameLine();
             if (ImGui.SmallButton("×"))
@@ -295,14 +367,14 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private void DrawModels(ConnectionConfig c)
     {
-        Section(Loc.Localize("ModelsSection", "Models"));
+        Section(Tr.Get("ModelsSection", "Models"));
         if (c.Mode != ConnectionMode.Direct)
         {
             var disabled1 = fetchingModels;
             if (disabled1) ImGui.BeginDisabled();
             if (ImGui.SmallButton(c.Mode == ConnectionMode.LiteLlm
-                    ? Loc.Localize("FetchModelsLiteLlm", "Fetch list from LiteLLM")
-                    : Loc.Localize("FetchModelsBtn", "Fetch model list")))
+                    ? Tr.Get("FetchModelsLiteLlm", "Fetch list from LiteLLM")
+                    : Tr.Get("FetchModelsBtn", "Fetch model list")))
             {
                 SaveSecrets();
                 fetchingModels = true;
@@ -312,23 +384,23 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
                     try
                     {
                         fetchedModels = await plugin.ListModelsAsync(echo: false).ConfigureAwait(false);
-                        if (fetchedModels.Count == 0) fetchError = Loc.Localize("FetchModelsEmpty", "No models returned. Run the connection test for details.");
+                        if (fetchedModels.Count == 0) fetchError = Tr.Get("FetchModelsEmpty", "No models returned. Run the connection test for details.");
                     }
                     finally { fetchingModels = false; }
                 });
             }
             if (disabled1) ImGui.EndDisabled();
             ImGui.SameLine();
-            if (fetchedModels.Count > 0) ImGui.TextColored(Theme.TextMuted, string.Format(Loc.Localize("ModelsCount", "{0} models"), fetchedModels.Count));
+            if (fetchedModels.Count > 0) ImGui.TextColored(Theme.TextMuted, string.Format(Tr.Get("ModelsCount", "{0} models"), fetchedModels.Count));
             else if (fetchError is { } err) ImGui.TextColored(Theme.Warn, err);
             else ImGui.NewLine();
         }
 
-        ModelInput(Loc.Localize("InboundModelLabel", "Inbound (fast)"), "in", c.InboundModel, v => c.InboundModel = v);
-        ModelInput(Loc.Localize("OutboundModelLabel", "Outbound (quality)"), "out", c.OutboundModel, v => c.OutboundModel = v);
+        ModelInput(Tr.Get("InboundModelLabel", "Inbound (fast)"), "in", c.InboundModel, v => c.InboundModel = v);
+        ModelInput(Tr.Get("OutboundModelLabel", "Outbound (quality)"), "out", c.OutboundModel, v => c.OutboundModel = v);
 
         var json = c.UseJsonResponseFormat;
-        if (ImGui.Checkbox(Loc.Localize("JsonModeLabel", "Request JSON format (models that reject it are instructed by prompt)"), ref json))
+        if (ImGui.Checkbox(Tr.Get("JsonModeLabel", "Request JSON format (models that reject it are instructed by prompt)"), ref json))
             c.UseJsonResponseFormat = json;
     }
 
@@ -353,12 +425,12 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private void DrawConnectionTest()
     {
-        ImGui.TextUnformatted(Loc.Localize("TestTitle", "Connection test"));
+        ImGui.TextUnformatted(Tr.Get("TestTitle", "Connection test"));
         ImGui.SameLine();
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 60));
         var disabled2 = testRunning;
         if (disabled2) ImGui.BeginDisabled();
-        if (AccentButton(testRunning ? "…" : Loc.Localize("RunTestBtn", "Run")))
+        if (AccentButton(testRunning ? "…" : Tr.Get("RunTestBtn", "Run")))
         {
             SaveSecrets();
             testRunning = true;
@@ -400,13 +472,13 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
         ImGui.Spacing();
         ImGui.Separator();
-        ImGui.TextUnformatted(Loc.Localize("TestHowToRead", "Reading failures"));
+        ImGui.TextUnformatted(Tr.Get("TestHowToRead", "Reading failures"));
         ImGui.PushTextWrapPos();
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("TestHint302", "302 / 403: check that the Cloudflare Access policy uses Service Auth."));
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("TestHint401", "401: the LiteLLM virtual key is invalid or expired."));
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("TestHintModel", "Model not found: check that the virtual key may use that model."));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("TestHint302", "302 / 403: check that the Cloudflare Access policy uses Service Auth."));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("TestHint401", "401: the LiteLLM virtual key is invalid or expired."));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("TestHintModel", "Model not found: check that the virtual key may use that model."));
         ImGui.Spacing();
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("SecretsNotice", "Keys and secrets are stored in Windows Credential Manager, not in the configuration file."));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("SecretsNotice", "Keys and secrets are stored in Windows Credential Manager, not in the configuration file."));
         ImGui.PopTextWrapPos();
     }
 
@@ -423,42 +495,42 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         ImGui.SameLine();
         ImGui.TextUnformatted(ConnectionSummary(c));
         ImGui.SameLine();
-        if (ImGui.SmallButton(Loc.Localize("ChangeInConnectionTab", "Change in Connection tab")))
-            selectTab = Tab.Connection;
+        if (ImGui.SmallButton(Tr.Get("ChangeInConnectionTab", "Change in Connection tab")))
+            selectTab = SettingsTab.Connection;
 
-        Section(Loc.Localize("UnresolvedSection", "When some words cannot be translated"));
-        Radio(Loc.Localize("UnresolvedPartial", "Translate what can be translated and mark the rest in the original (recommended)"), UnresolvedDisplayMode.PartialMarked);
-        Radio(Loc.Localize("UnresolvedOriginal", "Show only the original"), UnresolvedDisplayMode.OriginalOnly);
-        Radio(Loc.Localize("UnresolvedHide", "Show nothing"), UnresolvedDisplayMode.Hide);
+        Section(Tr.Get("UnresolvedSection", "When some words cannot be translated"));
+        Radio(Tr.Get("UnresolvedPartial", "Translate what can be translated and mark the rest in the original (recommended)"), UnresolvedDisplayMode.PartialMarked);
+        Radio(Tr.Get("UnresolvedOriginal", "Show only the original"), UnresolvedDisplayMode.OriginalOnly);
+        Radio(Tr.Get("UnresolvedHide", "Show nothing"), UnresolvedDisplayMode.Hide);
         var discard = t.DiscardRefusals;
-        if (ImGui.Checkbox(Loc.Localize("DiscardRefusals", "Discard refusals / apologies (\"cannot translate\") and show the original"), ref discard))
+        if (ImGui.Checkbox(Tr.Get("DiscardRefusals", "Discard refusals / apologies (\"cannot translate\") and show the original"), ref discard))
             t.DiscardRefusals = discard;
 
-        Section(Loc.Localize("FreshTermsSection", "Keep terms up to date"));
+        Section(Tr.Get("FreshTermsSection", "Keep terms up to date"));
         var game = t.UseGameData;
-        if (ImGui.Checkbox(Loc.Localize("UseGameData", "Load auto-translate phrases and action names from the game data (follows patches)"), ref game))
+        if (ImGui.Checkbox(Tr.Get("UseGameData", "Load auto-translate phrases and action names from the game data (follows patches)"), ref game))
             t.UseGameData = game;
         var auto = t.CommunityAutoUpdate;
-        if (ImGui.Checkbox(Loc.Localize("CommunityAutoUpdate", "Update the community dictionary at startup"), ref auto))
+        if (ImGui.Checkbox(Tr.Get("CommunityAutoUpdate", "Update the community dictionary at startup"), ref auto))
             t.CommunityAutoUpdate = auto;
         var hints = t.SendContextHints;
-        if (ImGui.Checkbox(Loc.Localize("SendContextHints", "Send location, combat state and party jobs as hints"), ref hints))
+        if (ImGui.Checkbox(Tr.Get("SendContextHints", "Send location, combat state and party jobs as hints"), ref hints))
             t.SendContextHints = hints;
         var url = t.CommunityGlossaryUrl;
-        if (LabeledInput(Loc.Localize("CommunityUrl", "Community dictionary URL"), "##communityurl", ref url)) t.CommunityGlossaryUrl = url.Trim();
+        if (LabeledInput(Tr.Get("CommunityUrl", "Community dictionary URL"), "##communityurl", ref url)) t.CommunityGlossaryUrl = url.Trim();
     }
 
     private static string ConnectionSummary(ConnectionConfig c)
     {
         var mode = c.Mode switch
         {
-            ConnectionMode.LiteLlm when c.CloudflareAccessEnabled => Loc.Localize("SummaryLiteLlmCf", "LiteLLM (via Cloudflare Access)"),
+            ConnectionMode.LiteLlm when c.CloudflareAccessEnabled => Tr.Get("SummaryLiteLlmCf", "LiteLLM (via Cloudflare Access)"),
             ConnectionMode.LiteLlm                                => "LiteLLM",
-            ConnectionMode.OpenAICompatible                       => Loc.Localize("ModeOpenAICompatible", "OpenAI-compatible"),
+            ConnectionMode.OpenAICompatible                       => Tr.Get("ModeOpenAICompatible", "OpenAI-compatible"),
             _                                                     => c.DirectProvider.ToString(),
         };
         var outbound = string.IsNullOrWhiteSpace(c.OutboundModel) ? c.InboundModel : c.OutboundModel;
-        return string.Format(Loc.Localize("SummaryLine", "{0} · inbound {1} / outbound {2}"), mode,
+        return string.Format(Tr.Get("SummaryLine", "{0} · inbound {1} / outbound {2}"), mode,
                              string.IsNullOrWhiteSpace(c.InboundModel) ? "-" : c.InboundModel,
                              string.IsNullOrWhiteSpace(outbound) ? "-" : outbound);
     }
@@ -473,7 +545,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private void DrawChannelsTab()
     {
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("ChannelsHelp", "Messages in these channels are translated. Where they are shown is set in the Display tab."));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("ChannelsHelp", "Messages in these channels are translated. Where they are shown is set in the Display tab."));
         ImGui.Spacing();
         const int columns = 4;
         if (!ImGui.BeginTable("##channels", columns)) return;
@@ -481,7 +553,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         {
             ImGui.TableNextColumn();
             var enabled = config.EnabledChannels.Contains(type);
-            if (ImGui.Checkbox(Loc.Localize(locKey, fallback), ref enabled))
+            if (ImGui.Checkbox(Tr.Get(locKey, fallback), ref enabled))
             {
                 if (enabled) config.EnabledChannels.Add(type);
                 else config.EnabledChannels.Remove(type);
@@ -495,19 +567,19 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     private void DrawDictionaryTab()
     {
         var stats = plugin.Glossary.Service.Stats;
-        Label(Loc.Localize("DictMine", "My dictionary"));
+        Label(Tr.Get("DictMine", "My dictionary"));
         ImGui.TextUnformatted($"{stats.UserCount:N0}");
-        Label(Loc.Localize("DictGame", "Game data"));
-        ImGui.TextUnformatted($"{stats.GameDataCount:N0}  ({Loc.Localize("DictAutoTranslate", "auto-translate")} {plugin.Glossary.Catalog.Entries.Count:N0})");
-        Label(Loc.Localize("DictCommunity", "Community"));
+        Label(Tr.Get("DictGame", "Game data"));
+        ImGui.TextUnformatted($"{stats.GameDataCount:N0}  ({Tr.Get("DictAutoTranslate", "auto-translate")} {plugin.Glossary.Catalog.Entries.Count:N0})");
+        Label(Tr.Get("DictCommunity", "Community"));
         ImGui.TextUnformatted($"{stats.CommunityCount:N0}  v{stats.CommunityVersion ?? "-"}  ({plugin.Glossary.Community?.Origin})");
-        Label(Loc.Localize("DictPending", "Pending"));
+        Label(Tr.Get("DictPending", "Pending"));
         ImGui.TextUnformatted($"{plugin.Glossary.Pending.Items.Count:N0}");
 
         ImGui.Spacing();
         var disabled3 = reloadingGlossary;
         if (disabled3) ImGui.BeginDisabled();
-        if (ImGui.Button(Loc.Localize("DictUpdateNow", "Update now")))
+        if (ImGui.Button(Tr.Get("DictUpdateNow", "Update now")))
         {
             reloadingGlossary = true;
             _ = Task.Run(async () =>
@@ -519,10 +591,10 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         if (disabled3) ImGui.EndDisabled();
 
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("DictOpenWindow", "Open dictionary")))
+        if (ImGui.Button(Tr.Get("DictOpenWindow", "Open dictionary")))
             plugin.OpenGlossary();
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("DictOpenAt", "Auto-translate list")))
+        if (ImGui.Button(Tr.Get("DictOpenAt", "Auto-translate list")))
             plugin.OpenAutoTranslate();
 
         if (plugin.Glossary.Community?.Error is { } error)
@@ -535,19 +607,19 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     {
         var d = config.Display;
 
-        Label(Loc.Localize("PresetLabel", "Preset"));
-        PresetButton(d, DisplayPreset.Recommended, Loc.Localize("PresetRecommended", "Recommended"));
-        PresetButton(d, DisplayPreset.WindowOnly, Loc.Localize("PresetWindow", "Window only"));
-        PresetButton(d, DisplayPreset.GameChatOnly, Loc.Localize("PresetGameChat", "Game chat only"));
-        PresetButton(d, DisplayPreset.BubbleOnly, Loc.Localize("PresetBubble", "Bubbles only"));
+        Label(Tr.Get("PresetLabel", "Preset"));
+        PresetButton(d, DisplayPreset.Recommended, Tr.Get("PresetRecommended", "Recommended"));
+        PresetButton(d, DisplayPreset.WindowOnly, Tr.Get("PresetWindow", "Window only"));
+        PresetButton(d, DisplayPreset.GameChatOnly, Tr.Get("PresetGameChat", "Game chat only"));
+        PresetButton(d, DisplayPreset.BubbleOnly, Tr.Get("PresetBubble", "Bubbles only"));
         if (d.Preset == DisplayPreset.Custom)
-            ImGui.TextColored(Theme.Accent, Loc.Localize("PresetCustom", "Custom"));
+            ImGui.TextColored(Theme.Accent, Tr.Get("PresetCustom", "Custom"));
         else
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("PresetHint", "Editing the table switches to \"Custom\"."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("PresetHint", "Editing the table switches to \"Custom\"."));
 
-        Section(Loc.Localize("RoutesSection", "Where each channel is shown"));
+        Section(Tr.Get("RoutesSection", "Where each channel is shown"));
         DrawRouteTable(d);
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("BubbleOnlyParty", "Bubbles attach to the party list, so only Party and Alliance can use them."));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("BubbleOnlyParty", "Bubbles attach to the party list, so only Party and Alliance can use them."));
 
         ImGui.Spacing();
         if (ImGui.BeginTable("##cards", 3, ImGuiTableFlags.BordersInnerV))
@@ -562,10 +634,10 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         }
 
         ImGui.Spacing();
-        if (ImGui.Button(Loc.Localize("TestDisplayBtn", "Test display")))
+        if (ImGui.Button(Tr.Get("TestDisplayBtn", "Test display")))
             plugin.ShowSampleMessages();
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(Loc.Localize("TestDisplayTip", "Adds sample messages to the translation log (no model call)."));
+            ImGui.SetTooltip(Tr.Get("TestDisplayTip", "Adds sample messages to the translation log (no model call)."));
     }
 
     private void PresetButton(DisplayConfig d, DisplayPreset preset, string label)
@@ -581,14 +653,14 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     {
         var flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.SizingStretchProp;
         if (!ImGui.BeginTable("##routes", 5, flags)) return;
-        ImGui.TableSetupColumn(Loc.Localize("ColChannel", "Channel"), ImGuiTableColumnFlags.WidthStretch, 2f);
-        ImGui.TableSetupColumn(Loc.Localize("ColBubble", "Bubble"), ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn(Loc.Localize("ColLog", "Translation log"), ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn(Loc.Localize("ColGameChat", "Game chat"), ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn(Loc.Localize("ColCombat", "In combat"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
+        ImGui.TableSetupColumn(Tr.Get("ColChannel", "Channel"), ImGuiTableColumnFlags.WidthStretch, 2f);
+        ImGui.TableSetupColumn(Tr.Get("ColBubble", "Bubble"), ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn(Tr.Get("ColLog", "Translation log"), ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn(Tr.Get("ColGameChat", "Game chat"), ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn(Tr.Get("ColCombat", "In combat"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
         ImGui.TableHeadersRow();
 
-        var modes = CombatModeKeys.Select((k, i) => Loc.Localize(k, CombatModeFallbacks[i])).ToArray();
+        var modes = CombatModeKeys.Select((k, i) => Tr.Get(k, CombatModeFallbacks[i])).ToArray();
         foreach (var group in Enum.GetValues<ChannelGroup>())
         {
             if (!d.Routes.TryGetValue(group, out var route))
@@ -633,21 +705,21 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private static void DrawBubbleCard(BubbleSettings b)
     {
-        ImGui.TextUnformatted(Loc.Localize("CardBubble", "Bubbles"));
+        ImGui.TextUnformatted(Tr.Get("CardBubble", "Bubbles"));
         var seconds = b.Seconds;
         ImGui.SetNextItemWidth(90);
-        if (ImGui.InputFloat(Loc.Localize("BubbleSeconds", "seconds shown"), ref seconds, 0.5f, 1f, "%.1f"))
+        if (ImGui.InputFloat(Tr.Get("BubbleSeconds", "seconds shown"), ref seconds, 0.5f, 1f, "%.1f"))
             b.Seconds = Math.Clamp(seconds, 1f, 60f);
         var max = b.MaxPerMember;
         ImGui.SetNextItemWidth(90);
-        if (ImGui.InputInt(Loc.Localize("BubbleMax", "max per member"), ref max))
+        if (ImGui.InputInt(Tr.Get("BubbleMax", "max per member"), ref max))
             b.MaxPerMember = Math.Clamp(max, 1, 5);
         var extend = b.ExtendByLength;
-        if (ImGui.Checkbox(Loc.Localize("BubbleExtend", "Longer for long text"), ref extend)) b.ExtendByLength = extend;
+        if (ImGui.Checkbox(Tr.Get("BubbleExtend", "Longer for long text"), ref extend)) b.ExtendByLength = extend;
 
         ImGui.Spacing();
         var history = b.ShowHistory;
-        if (ImGui.Checkbox(Loc.Localize("BubbleHistory", "Recent 3 at bottom right"), ref history)) b.ShowHistory = history;
+        if (ImGui.Checkbox(Tr.Get("BubbleHistory", "Recent 3 at bottom right"), ref history)) b.ShowHistory = history;
         DrawHotkey(b.HistoryHotkey);
     }
 
@@ -658,7 +730,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private static void DrawHotkey(HotkeySettings hk)
     {
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("HotkeyLabel", "Toggle key"));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("HotkeyLabel", "Toggle key"));
         var ctrl = hk.Ctrl;
         if (ImGui.Checkbox("Ctrl##hk", ref ctrl)) hk.Ctrl = ctrl;
         ImGui.SameLine();
@@ -675,13 +747,13 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private static void DrawLogCard(LogSettings l)
     {
-        ImGui.TextUnformatted(Loc.Localize("CardLog", "Translation log"));
+        ImGui.TextUnformatted(Tr.Get("CardLog", "Translation log"));
         var oneLine = l.OneLine;
-        if (ImGui.Checkbox(Loc.Localize("LogOneLine", "One line (click for original)"), ref oneLine)) l.OneLine = oneLine;
+        if (ImGui.Checkbox(Tr.Get("LogOneLine", "One line (click for original)"), ref oneLine)) l.OneLine = oneLine;
         var pause = l.PauseWhileScrolled;
-        if (ImGui.Checkbox(Loc.Localize("LogPause", "Pause while scrolled up"), ref pause)) l.PauseWhileScrolled = pause;
+        if (ImGui.Checkbox(Tr.Get("LogPause", "Pause while scrolled up"), ref pause)) l.PauseWhileScrolled = pause;
         var hl = l.HighlightMentions;
-        if (ImGui.Checkbox(Loc.Localize("LogHighlight", "Highlight messages to me"), ref hl)) l.HighlightMentions = hl;
+        if (ImGui.Checkbox(Tr.Get("LogHighlight", "Highlight messages to me"), ref hl)) l.HighlightMentions = hl;
     }
 
     private static readonly string[] OutputKeys = ["OutputOriginal", "OutputEcho"];
@@ -689,18 +761,18 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
 
     private static void DrawGameChatCard(GameChatSettings g)
     {
-        ImGui.TextUnformatted(Loc.Localize("CardGameChat", "Game chat"));
+        ImGui.TextUnformatted(Tr.Get("CardGameChat", "Game chat"));
         var output = (int)g.Output;
         ImGui.SetNextItemWidth(130);
-        if (ImGui.Combo(Loc.Localize("GameChatOutput", "output"), ref output, OutputKeys.Select((k, i) => Loc.Localize(k, OutputFallbacks[i])).ToArray()))
+        if (ImGui.Combo(Tr.Get("GameChatOutput", "output"), ref output, OutputKeys.Select((k, i) => Tr.Get(k, OutputFallbacks[i])).ToArray()))
             g.Output = (GameChatOutput)output;
         var prefix = g.Prefix;
         ImGui.SetNextItemWidth(90);
-        if (ImGui.InputText(Loc.Localize("GameChatPrefix", "line prefix"), ref prefix, 32)) g.Prefix = prefix;
+        if (ImGui.InputText(Tr.Get("GameChatPrefix", "line prefix"), ref prefix, 32)) g.Prefix = prefix;
         var replace = g.ReplaceOriginal;
-        if (ImGui.Checkbox(Loc.Localize("GameChatReplace", "Replace the original with the translation"), ref replace)) g.ReplaceOriginal = replace;
+        if (ImGui.Checkbox(Tr.Get("GameChatReplace", "Replace the original with the translation"), ref replace)) g.ReplaceOriginal = replace;
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(Loc.Localize("GameChatReplaceTip", "Only possible when the translation is already cached; otherwise the translation is added as a new line."));
+            ImGui.SetTooltip(Tr.Get("GameChatReplaceTip", "Only possible when the translation is already cached; otherwise the translation is added as a new line."));
     }
 
     // ═════ Helpers ═══════════════════════════════════════════════════════
@@ -758,6 +830,7 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
     /// <summary>Masked text box bound to a secret; written to the store on Save.</summary>
     private void SecretInput(string label, string secretName)
     {
+        secretLabels[secretName] = label;
         if (!secretBuffers.TryGetValue(secretName, out var buf))
             secretBuffers[secretName] = buf = ReadSecret(secretName);
 
@@ -771,17 +844,20 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
             dirtySecrets.Add(secretName);
         }
         ImGui.SameLine();
-        if (ImGui.SmallButton($"{(visible ? Loc.Localize("HideBtn", "Hide") : Loc.Localize("ShowBtn", "Show"))}##{secretName}"))
+        if (ImGui.SmallButton($"{(visible ? Tr.Get("HideBtn", "Hide") : Tr.Get("ShowBtn", "Show"))}##{secretName}"))
         {
             if (visible) visibleSecrets.Remove(secretName);
             else visibleSecrets.Add(secretName);
         }
     }
 
-    private void SaveSecrets()
+    /// <summary>Writes changed secrets to Credential Manager; returns the labels of those that failed.</summary>
+    private List<string> SaveSecrets()
     {
+        var failures = new List<string>();
         foreach (var name in dirtySecrets.ToList())
         {
+            var label = secretLabels.GetValueOrDefault(name, name);
             try
             {
                 plugin.Secrets.Set(name, secretBuffers[name].Trim());
@@ -789,11 +865,12 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
             }
             catch (Exception ex)
             {
-                Plugin.Log.Error("[AetherGlot] Could not save a secret to Credential Manager ({Type}).", ex.GetType().Name);
+                failures.Add(label);
+                plugin.Diag.Error($"Could not save \"{label}\" to Windows Credential Manager ({ex.GetType().Name}).");
             }
         }
 
-        if (!headersDirty) return;
+        if (!headersDirty) return failures;
         try
         {
             var rows = headerRows.Where(r => !string.IsNullOrWhiteSpace(r.Name))
@@ -811,19 +888,34 @@ public sealed class ConfigWindow : Window, IDisposable, IRelocalizable
         }
         catch (Exception ex)
         {
-            Plugin.Log.Error("[AetherGlot] Could not save extra headers ({Type}).", ex.GetType().Name);
+            failures.Add(Tr.Get("ExtraHeadersLabel", "Extra headers"));
+            plugin.Diag.Error($"Could not save extra headers ({ex.GetType().Name}).");
         }
+        return failures;
     }
 
     private void SaveAll()
     {
-        SaveSecrets();
+        var failures = SaveSecrets();
         plugin.TranslationLog.Capacity = config.Display.Log.Capacity;
         plugin.Pipeline.Cache.Capacity = config.Translation.CacheSize;
-        config.Save();
+        try
+        {
+            config.Save();
+        }
+        catch (Exception ex)
+        {
+            failures.Add(Tr.Get("SaveSettingsFile", "settings file"));
+            plugin.Diag.Error($"Could not write the settings file ({ex.GetType().Name}).");
+        }
+
+        saveFailures = failures;
+        savedAt      = DateTimeOffset.Now;
+        if (failures.Count == 0)
+            plugin.Diag.Info("Settings saved.");
     }
 
-    private static string Title() => Loc.Localize("ConfigWindowTitle", "AetherGlot Settings") + "###AetherGlotSettings";
+    private static string Title() => Tr.Get("ConfigWindowTitle", "AetherGlot Settings") + "###AetherGlotSettings";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

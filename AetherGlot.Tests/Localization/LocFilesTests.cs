@@ -63,10 +63,25 @@ public sealed partial class LocFilesTests
         Assert.Empty(problems);
     }
 
+    /// <summary>
+    /// Loc.Localize(key, fallback) picks the translation table by *calling* assembly, which the JIT
+    /// can get wrong after inlining (seen in game as "#CombatAll"). Everything goes through Tr.Get.
+    /// </summary>
+    [Fact]
+    public void Code_UsesTrGet_NotLocLocalizeDirectly()
+    {
+        var offenders = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "AetherGlot"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && Path.GetFileName(f) != "Tr.cs")
+            .Where(f => File.ReadAllText(f).Contains("Loc.Localize(", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToList();
+        Assert.Empty(offenders);
+    }
+
     [GeneratedRegex(@"\{[^{}]*\}")]
     private static partial Regex PlaceholderRegex();
 
-    [GeneratedRegex(@"Loc\.Localize\(\s*""(?<key>\w+)""\s*,\s*(?<text>(?:""(?:[^""\\]|\\.)*""\s*\+?\s*)+)\)")]
+    [GeneratedRegex(@"(?:Loc\.Localize|Tr\.Get)\(\s*""(?<key>\w+)""\s*,\s*(?<text>(?:""(?:[^""\\]|\\.)*""\s*\+?\s*)+)\)")]
     private static partial Regex LocalizeRegex();
 
     [GeneratedRegex(@"""(?:[^""\\]|\\.)*""")]

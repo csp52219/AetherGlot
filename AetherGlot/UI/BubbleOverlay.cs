@@ -116,7 +116,7 @@ internal sealed class BubbleOverlay
             if (bubble.Note is { } note)
                 ImGui.TextColored(Theme.TermChip, note);
             if (bubble.Pinned)
-                ImGui.TextColored(Theme.TextMuted, Loc.Localize("BubblePinned", "pinned · click to release"));
+                ImGui.TextColored(Theme.TextMuted, Tr.Get("BubblePinned", "pinned · click to release"));
 
             if (ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 board.TogglePin(bubble.Id, now);
@@ -143,7 +143,7 @@ internal sealed class BubbleOverlay
                                        ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
         if (ImGui.Begin("##aghistory", flags))
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("HistoryTitle", "Recent translations"));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("HistoryTitle", "Recent translations"));
             ImGui.SameLine();
             ImGui.TextColored(Theme.TextMuted, $"({config.Display.Bubble.HistoryHotkey})");
             foreach (var item in history)
@@ -153,7 +153,7 @@ internal sealed class BubbleOverlay
                 ImGui.SameLine();
                 RichText.Draw([new TextRun(item.Text, Theme.Text)], wrap: false);
             }
-            if (ImGui.SmallButton(Loc.Localize("HistoryOpenLog", "Open translation log")))
+            if (ImGui.SmallButton(Tr.Get("HistoryOpenLog", "Open translation log")))
                 openLog();
         }
         ImGui.End();

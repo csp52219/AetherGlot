@@ -9,8 +9,9 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>
     /// v1: plaintext ApiKeys + single provider/model. v2: ConnectionConfig + secret store.
     /// v3: outbound prompt became optional style instructions (tone buttons), AlwaysTranslate removed.
+    /// v4: game chat output defaults to Echo; "↳" prefix replaced; diagnostics settings.
     /// </summary>
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public int Version { get; set; } = CurrentVersion;
 
@@ -22,6 +23,9 @@ public sealed class Configuration : IPluginConfiguration
 
     // --- Where translations are shown ---
     public DisplayConfig Display { get; set; } = new();
+
+    // --- Logging for troubleshooting ---
+    public DiagnosticsSettings Diagnostics { get; set; } = new();
 
     public bool InboundEnabled { get; set; } = true;
     public bool OutboundEnabled { get; set; } = false;

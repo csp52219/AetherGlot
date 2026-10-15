@@ -76,6 +76,14 @@ public sealed class Plugin : IDalamudPlugin
     private readonly AutoTranslateWindow    autoTranslateWindow;
     private readonly ChatTranslationService translationService;
     private readonly HttpClient             httpClient;
+
+    /// <summary>Echo lines are printed in order on the framework thread (see OnFrameworkUpdate).</summary>
+    private static readonly ConcurrentQueue<string> EchoQueue = new();
+
+    internal DiagnosticLog Diag { get; }
+
+    /// <summary>Result of the last connection test (for "copy diagnostics").</summary>
+    internal DiagnosticReport? LastConnectionReport { get; private set; }
     private readonly CancellationTokenSource disposeCts = new();
 
     public Plugin()
@@ -85,6 +93,7 @@ public sealed class Plugin : IDalamudPlugin
 
         InitialiseLocalization(PluginInterface.UiLanguage);
 
+        Diag = new DiagnosticLog(Log, () => Configuration.Diagnostics);
         Secrets = new CachingSecretStore(CreateSecretStore());
         ConfigurationMigrator.Run(Configuration, Secrets, Log);
 
@@ -115,7 +124,7 @@ public sealed class Plugin : IDalamudPlugin
 
         translationService = new ChatTranslationService(
             Configuration, Pipeline, translationCtx, BuildConnectionSettings,
-            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Bubbles, Log);
+            ChatGui, ClientState, ObjectTable, Condition, PartyList, DataManager, Framework, SeStringEvaluator, Glossary, TranslationLog, Bubbles, Diag);
 
         // ── Windows ────────────────────────────────────────────────────────
         inspectorWindow     = new InspectorWindow(this);
@@ -136,16 +145,17 @@ public sealed class Plugin : IDalamudPlugin
         // ── Commands ───────────────────────────────────────────────────────
         CommandManager.AddHandler(CommandName, new CommandInfo(OnConfigCommand)
         {
-            HelpMessage = Loc.Localize("CommandHelp",
+            HelpMessage = Tr.Get("CommandHelp",
                 "Open AetherGlot settings. Subcommands: log (translation log), dict [text] (dictionary), at (auto-translate list), inspect (latest translation), test (connection test), models (model list), reload (reload dictionaries), lookup <text> (show dictionary hits)."),
         });
         CommandManager.AddHandler(SendCommandName, new CommandInfo(OnSendCommand)
         {
-            HelpMessage = Loc.Localize("SendCommandHelp", "Translate and send: /agsend [channel] <text>"),
+            HelpMessage = Tr.Get("SendCommandHelp", "Translate and send: /agsend [channel] <text>"),
         });
 
         ChatGui.ChatMessage += OnChatMessage;
         PluginInterface.LanguageChanged += OnLanguageChanged;
+        Diag.Info(DiagnosticsSummary.StartupLine(this));
         Framework.Update += OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
@@ -188,14 +198,14 @@ public sealed class Plugin : IDalamudPlugin
                 locFile = Path.Combine(locDir, "en.json");
 
             if (File.Exists(locFile))
-                Loc.Setup(File.ReadAllText(locFile));
+                Loc.Setup(File.ReadAllText(locFile), Tr.Assembly);
             else
-                Loc.SetupWithFallbacks();
+                Loc.SetupWithFallbacks(Tr.Assembly);
         }
         catch (Exception ex)
         {
             Log.Warning("[AetherGlot] Could not load translations ({Type}); using English.", ex.GetType().Name);
-            Loc.SetupWithFallbacks();
+            Loc.SetupWithFallbacks(Tr.Assembly);
         }
     }
 
@@ -243,7 +253,7 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             case "inspect":
                 if (!inspectorWindow.InspectLatest())
-                    Echo(Loc.Localize("InspectNothing", "Nothing to inspect yet: no translated message in the log."));
+                    Echo(Tr.Get("InspectNothing", "Nothing to inspect yet: no translated message in the log."));
                 break;
             default:
                 configWindow.Toggle();
@@ -255,14 +265,14 @@ public sealed class Plugin : IDalamudPlugin
 
     private async Task ReloadGlossaryAsync()
     {
-        Echo(Loc.Localize("GlossaryReloading", "Reloading dictionaries..."));
+        Echo(Tr.Get("GlossaryReloading", "Reloading dictionaries..."));
         await Glossary.ReloadAsync(forceDownload: true).ConfigureAwait(false);
         var s = Glossary.Service.Stats;
         var c = Glossary.Community;
-        Echo(string.Format(Loc.Localize("GlossaryReloaded", "My dictionary {0} · game data {1} · community {2} (v{3}, {4}) · auto-translate {5}"),
+        Echo(string.Format(Tr.Get("GlossaryReloaded", "My dictionary {0} · game data {1} · community {2} (v{3}, {4}) · auto-translate {5}"),
                            s.UserCount, s.GameDataCount, s.CommunityCount, s.CommunityVersion ?? "?", c?.Origin, Glossary.Catalog.Entries.Count));
         if (c?.Error is { } error)
-            Echo(string.Format(Loc.Localize("GlossaryCommunityError", "Community dictionary: {0}"), error));
+            Echo(string.Format(Tr.Get("GlossaryCommunityError", "Community dictionary: {0}"), error));
     }
 
     // Runs on the framework thread (command handler), so game state can be read
@@ -273,7 +283,7 @@ public sealed class Plugin : IDalamudPlugin
         var targetCode = sourceCode == "ja" ? "en" : "ja";
         if (sourceCode == clientCode && clientCode is not ("ja" or "en"))
         {
-            Echo(Loc.Localize("LookupJaEnOnly", "Dictionary lookup supports Japanese ⇔ English only."));
+            Echo(Tr.Get("LookupJaEnOnly", "Dictionary lookup supports Japanese ⇔ English only."));
             return;
         }
 
@@ -281,7 +291,7 @@ public sealed class Plugin : IDalamudPlugin
         var lookup   = Glossary.Service.Lookup(text, sourceCode, targetCode, inCombat, null, Configuration.Translation.MaxGlossaryHits);
         if (lookup.Matches.Count == 0)
         {
-            Echo(Loc.Localize("LookupNoHits", "No dictionary hits."));
+            Echo(Tr.Get("LookupNoHits", "No dictionary hits."));
             return;
         }
 
@@ -302,7 +312,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         var settings = BuildConnectionSettings();
         if (echo)
-            Echo(Loc.Localize("TestStarted", "Running connection test..."));
+            Echo(Tr.Get("TestStarted", "Running connection test..."));
 
         DiagnosticReport report;
         try
@@ -314,37 +324,32 @@ public sealed class Plugin : IDalamudPlugin
             return new DiagnosticReport([], []);
         }
 
+        LastConnectionReport = report;
+        foreach (var line in DiagnosticsSummary.TestLines(report, settings))
+        {
+            if (report.AllPassed) Diag.Info("Connection test: " + line);
+            else Diag.Warning("Connection test: " + line);
+        }
+
         if (echo)
         {
-            foreach (var step in report.Steps)
-            {
-                var mark = step.Status switch
-                {
-                    DiagnosticStatus.Ok      => "OK  ",
-                    DiagnosticStatus.Warning => "WARN",
-                    DiagnosticStatus.Failed  => "FAIL",
-                    _                        => "SKIP",
-                };
-                var detail = SecretRedactor.Redact(step.Detail, settings.SecretValues());
-                Echo($"{mark} {StepLabel(step.Kind)}: {detail}");
-                if (step.Hint is not null && step.Status == DiagnosticStatus.Failed)
-                    Echo($"     → {step.Hint}");
-            }
+            foreach (var line in DiagnosticsSummary.TestLines(report, settings))
+                Echo(line);
             Echo(report.AllPassed
-                ? Loc.Localize("TestPassed", "Connection test passed.")
-                : Loc.Localize("TestFailed", "Connection test failed."));
-            Echo(Loc.Localize("SecretsNotice", "Keys and secrets are stored in Windows Credential Manager, not in the configuration file."));
+                ? Tr.Get("TestPassed", "Connection test passed.")
+                : Tr.Get("TestFailed", "Connection test failed."));
+            Echo(Tr.Get("SecretsNotice", "Keys and secrets are stored in Windows Credential Manager, not in the configuration file."));
         }
         return report;
     }
 
     internal static string StepLabel(DiagnosticStepKind kind) => kind switch
     {
-        DiagnosticStepKind.CloudflareAccess => Loc.Localize("StepAccess", "Cloudflare Access"),
-        DiagnosticStepKind.Authentication   => Loc.Localize("StepAuth", "LiteLLM authentication"),
-        DiagnosticStepKind.ModelList        => Loc.Localize("StepModels", "Model list"),
-        DiagnosticStepKind.JsonInbound      => Loc.Localize("StepJsonInbound", "JSON response (inbound model)"),
-        DiagnosticStepKind.JsonOutbound     => Loc.Localize("StepJsonOutbound", "JSON response (outbound model)"),
+        DiagnosticStepKind.CloudflareAccess => Tr.Get("StepAccess", "Cloudflare Access"),
+        DiagnosticStepKind.Authentication   => Tr.Get("StepAuth", "LiteLLM authentication"),
+        DiagnosticStepKind.ModelList        => Tr.Get("StepModels", "Model list"),
+        DiagnosticStepKind.JsonInbound      => Tr.Get("StepJsonInbound", "JSON response (inbound model)"),
+        DiagnosticStepKind.JsonOutbound     => Tr.Get("StepJsonOutbound", "JSON response (outbound model)"),
         _                                   => kind.ToString(),
     };
 
@@ -357,13 +362,13 @@ public sealed class Plugin : IDalamudPlugin
         {
             if (ProviderFactory.GetProvider(settings) is not IModelLister lister)
             {
-                if (echo) Echo(Loc.Localize("ModelsUnsupported", "Model listing is only available through LiteLLM / OpenAI-compatible."));
+                if (echo) Echo(Tr.Get("ModelsUnsupported", "Model listing is only available through LiteLLM / OpenAI-compatible."));
                 return [];
             }
 
             var models = await lister.ListModelsAsync(disposeCts.Token).ConfigureAwait(false);
             if (echo)
-                Echo(string.Format(Loc.Localize("ModelsListed", "{0} models: {1}"), models.Count, string.Join(", ", models)));
+                Echo(string.Format(Tr.Get("ModelsListed", "{0} models: {1}"), models.Count, string.Join(", ", models)));
             return models;
         }
         catch (OperationCanceledException)
@@ -378,19 +383,25 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    private static void Echo(string text) =>
-        _ = Framework.RunOnFrameworkThread(() => ChatGui.Print($"{EchoPrefix} {text}", null, (ushort)XivChatType.Echo));
+    // Queued and printed in order: separate RunOnFrameworkThread calls could reorder lines
+    private static void Echo(string text) => EchoQueue.Enqueue(text);
+
+    private static void FlushEcho()
+    {
+        while (EchoQueue.TryDequeue(out var text))
+            ChatGui.Print($"{EchoPrefix} {text}", null, (ushort)XivChatType.Echo);
+    }
 
     // ── /agsend ────────────────────────────────────────────────────────────
 
     private void OnSendCommand(string command, string args)
     {
-        var usage = Loc.Localize("SendCommandUsage",
+        var usage = Tr.Get("SendCommandUsage",
             "[AetherGlot] Usage: /agsend [channel] <text>\nPrefixes: s sh y p a fc nn l1-l8 cw1-cw8");
 
         if (!Configuration.OutboundEnabled)
         {
-            ChatGui.Print(Loc.Localize("OutboundDisabled", "[AetherGlot] Outbound translation is disabled."), null, (ushort)XivChatType.Echo);
+            ChatGui.Print(Tr.Get("OutboundDisabled", "[AetherGlot] Outbound translation is disabled."), null, (ushort)XivChatType.Echo);
             return;
         }
 
@@ -431,13 +442,19 @@ public sealed class Plugin : IDalamudPlugin
         windowSystem.Draw();
     }
 
-    private void OnFrameworkUpdate(IFramework framework) => bubbleOverlay.Update();
+    private void OnFrameworkUpdate(IFramework framework)
+    {
+        FlushEcho();
+        bubbleOverlay.Update();
+    }
 
     private void OpenConfigUi() => configWindow.IsOpen = true;
 
     private void OpenMainUi() => logWindow.IsOpen = true;
 
     internal void OpenSettings() => configWindow.IsOpen = true;
+
+    internal void OpenSettings(SettingsTab tab) => configWindow.OpenAt(tab);
 
     internal void OpenLog() => logWindow.IsOpen = true;
 
@@ -536,7 +553,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // The same samples as bubbles, for members currently in the party (if any)
         foreach (var name in PartyList.Select(m => m.Name.TextValue).Where(n => !string.IsNullOrEmpty(n)).Take(3))
-            Bubbles.Add(name, [new DisplaySegment(Loc.Localize("BubbleSample", "This is a sample translation bubble."), SegmentKind.Translated)], DateTimeOffset.Now);
+            Bubbles.Add(name, [new DisplaySegment(Tr.Get("BubbleSample", "This is a sample translation bubble."), SegmentKind.Translated)], DateTimeOffset.Now);
 
         logWindow.IsOpen = true;
     }

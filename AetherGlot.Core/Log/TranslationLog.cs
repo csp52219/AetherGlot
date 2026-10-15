@@ -37,6 +37,9 @@ public sealed class LogEntry
     }
 }
 
+/// <summary>Translated messages of a channel that went elsewhere (bubbles / game chat) but not to the log.</summary>
+public sealed record NotLoggedCount(ChannelGroup Group, int Count, Destinations Destinations);
+
 /// <summary>
 /// Bounded, thread-safe list of recent messages for the log window, plus a rolling average of
 /// response times and the last connection state for the footer.
@@ -48,6 +51,7 @@ public sealed class TranslationLog
     private readonly object gate = new();
     private readonly LinkedList<LogEntry> entries = new();
     private readonly Queue<double> latencies = new();
+    private readonly Dictionary<ChannelGroup, (int Count, Destinations Last)> notLogged = new();
     private long nextId;
     private int capacity;
 
@@ -90,6 +94,27 @@ public sealed class TranslationLog
             Version++;
             return entry;
         }
+    }
+
+    /// <summary>Counts a message that is shown only outside the log (so the log can say where it went).</summary>
+    public void RecordNotLogged(ChannelGroup group, Destinations destinations)
+    {
+        lock (gate)
+        {
+            notLogged[group] = (notLogged.TryGetValue(group, out var c) ? c.Count + 1 : 1, destinations);
+            Version++;
+        }
+    }
+
+    /// <summary>Per channel group, since start (or the last clear).</summary>
+    public IReadOnlyList<NotLoggedCount> NotLogged
+    {
+        get { lock (gate) return notLogged.Select(kv => new NotLoggedCount(kv.Key, kv.Value.Count, kv.Value.Last)).OrderBy(n => n.Group).ToList(); }
+    }
+
+    public int Count
+    {
+        get { lock (gate) return entries.Count; }
     }
 
     public void Complete(LogEntry entry, InboundOutcome? outcome)
@@ -135,6 +160,7 @@ public sealed class TranslationLog
         lock (gate)
         {
             entries.Clear();
+            notLogged.Clear();
             Version++;
         }
     }

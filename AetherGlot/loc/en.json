@@ -239,6 +239,14 @@
     "Message": "Keys and secrets are stored in Windows Credential Manager, not in the settings file.",
     "Description": ""
   },
+  "SaveFailed": {
+    "Message": "! Could not save: {0} (see dalamud.log)",
+    "Description": ""
+  },
+  "SaveDone": {
+    "Message": "✓ Saved ({0:HH:mm:ss})",
+    "Description": ""
+  },
   "SaveBtn": {
     "Message": "Save",
     "Description": ""
@@ -297,6 +305,34 @@
   },
   "HelpSend": {
     "Message": "translate and send",
+    "Description": ""
+  },
+  "DiagSection": {
+    "Message": "Troubleshooting",
+    "Description": ""
+  },
+  "DiagWhere": {
+    "Message": "Start-up, sends, saves, warnings and errors are always written to dalamud.log (open it with /xllog).",
+    "Description": ""
+  },
+  "DiagVerbose": {
+    "Message": "Detailed log: route and result of every message",
+    "Description": ""
+  },
+  "DiagText": {
+    "Message": "Also write message text and names (other players' chat)",
+    "Description": ""
+  },
+  "DiagCopy": {
+    "Message": "Copy diagnostics",
+    "Description": ""
+  },
+  "DiagCopied": {
+    "Message": "✓ Copied. Paste it into your bug report (no keys or secrets included).",
+    "Description": ""
+  },
+  "DiagCopyHint": {
+    "Message": "Settings summary, last connection test and recent errors; keys and secrets are never included.",
     "Description": ""
   },
   "ModeLabel": {
@@ -641,6 +677,10 @@
   },
   "ShowBtn": {
     "Message": "Show",
+    "Description": ""
+  },
+  "SaveSettingsFile": {
+    "Message": "settings file",
     "Description": ""
   },
   "ConfigWindowTitle": {
@@ -1333,6 +1373,26 @@
   },
   "SendTonePolite": {
     "Message": "Polite",
+    "Description": ""
+  },
+  "LogHiddenByFilter": {
+    "Message": "{0} hidden by the filter",
+    "Description": ""
+  },
+  "LogShowAll": {
+    "Message": "Show all",
+    "Description": ""
+  },
+  "LogNotLogged": {
+    "Message": "Not in this log: {0}",
+    "Description": ""
+  },
+  "LogNotLoggedTip": {
+    "Message": "These channels are set to show translations elsewhere. Change it in Settings → Display.",
+    "Description": ""
+  },
+  "LogOpenDisplay": {
+    "Message": "Display settings",
     "Description": ""
   },
   "LogShowOriginal": {

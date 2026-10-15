@@ -46,8 +46,11 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         DrawToolbar();
         ImGui.Separator();
 
-        var footerHeight = ImGui.GetFrameHeightWithSpacing() + 4;
-        var entries = plugin.TranslationLog.Snapshot(config.Display.Log.Filter);
+        var entries   = plugin.TranslationLog.Snapshot(config.Display.Log.Filter);
+        var hidden    = plugin.TranslationLog.Count - entries.Count;
+        var notLogged = plugin.TranslationLog.NotLogged;
+        var notices   = (hidden > 0 ? 1 : 0) + (notLogged.Count > 0 ? 1 : 0);
+        var footerHeight = ImGui.GetFrameHeightWithSpacing() * (1 + notices) + 4;
 
         if (ImGui.BeginChild("##logentries", new Vector2(0, -footerHeight)))
         {
@@ -59,8 +62,44 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         ImGui.EndChild();
 
         ImGui.Separator();
+        DrawNotices(hidden, notLogged);
         DrawFooter(entries);
         DrawAddToDictionaryPopup();
+    }
+
+    /// <summary>Why some translations are not in this list: the filter, or channels routed elsewhere.</summary>
+    private void DrawNotices(int hidden, IReadOnlyList<NotLoggedCount> notLogged)
+    {
+        if (hidden > 0)
+        {
+            ImGui.TextColored(Theme.TextMuted, string.Format(Tr.Get("LogHiddenByFilter", "{0} hidden by the filter"), hidden));
+            ImGui.SameLine();
+            if (ImGui.SmallButton(Tr.Get("LogShowAll", "Show all")))
+            {
+                config.Display.Log.Filter = LogFilter.All;
+                scrollToBottom = true;
+                config.Save();
+            }
+        }
+
+        if (notLogged.Count > 0)
+        {
+            var parts = notLogged.Select(n => $"{ChannelInfo.GroupLabel(n.Group)} {n.Count} ({DestinationLabel(n.Destinations)})");
+            ImGui.TextColored(Theme.TextMuted, string.Format(Tr.Get("LogNotLogged", "Not in this log: {0}"), string.Join(" · ", parts)));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(Tr.Get("LogNotLoggedTip", "These channels are set to show translations elsewhere. Change it in Settings → Display."));
+            ImGui.SameLine();
+            if (ImGui.SmallButton(Tr.Get("LogOpenDisplay", "Display settings")))
+                plugin.OpenSettings(SettingsTab.Display);
+        }
+    }
+
+    private static string DestinationLabel(Destinations d)
+    {
+        var names = new List<string>();
+        if (d.HasFlag(Destinations.Bubble))   names.Add(Tr.Get("ColBubble", "Bubble"));
+        if (d.HasFlag(Destinations.GameChat)) names.Add(Tr.Get("ColGameChat", "Game chat"));
+        return names.Count == 0 ? "—" : string.Join(" + ", names);
     }
 
     // ── Toolbar ─────────────────────────────────────────────────────────
@@ -72,7 +111,7 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         {
             var selected = log.Filter == filter;
             if (selected) ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent with { W = 0.45f });
-            if (ImGui.SmallButton(Loc.Localize(locKey, fallback)))
+            if (ImGui.SmallButton(Tr.Get(locKey, fallback)))
             {
                 log.Filter = filter;
                 scrollToBottom = true;
@@ -85,14 +124,14 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         ImGui.Dummy(new Vector2(12, 0));
         ImGui.SameLine();
         var showOriginal = log.ShowOriginal;
-        if (ImGui.Checkbox(Loc.Localize("LogShowOriginal", "Original"), ref showOriginal)) { log.ShowOriginal = showOriginal; config.Save(); }
+        if (ImGui.Checkbox(Tr.Get("LogShowOriginal", "Original"), ref showOriginal)) { log.ShowOriginal = showOriginal; config.Save(); }
         ImGui.SameLine();
         var showChips = log.ShowTermChips;
-        if (ImGui.Checkbox(Loc.Localize("LogShowChips", "Term chips"), ref showChips)) { log.ShowTermChips = showChips; config.Save(); }
+        if (ImGui.Checkbox(Tr.Get("LogShowChips", "Term chips"), ref showChips)) { log.ShowTermChips = showChips; config.Save(); }
 
         ImGui.SameLine();
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - 70));
-        if (ImGui.SmallButton(Loc.Localize("LogSettingsBtn", "Settings")))
+        if (ImGui.SmallButton(Tr.Get("LogSettingsBtn", "Settings")))
             plugin.OpenSettings();
     }
 
@@ -163,14 +202,14 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
     {
         var outcome = entry.Outcome;
         var (text, color) = entry.State == LogEntryState.Translating
-            ? (Loc.Localize("LogTranslating", "translating…"), Theme.TextMuted)
+            ? (Tr.Get("LogTranslating", "translating…"), Theme.TextMuted)
             : outcome?.Kind switch
             {
-                InboundOutcomeKind.Skipped  => ($"{outcome.DetectedLanguage.ToUpperInvariant()} · {Loc.Localize("LogSkipped", "skipped")}", Theme.TextMuted),
-                InboundOutcomeKind.Fallback => (Loc.Localize("LogOriginal", "original"), Theme.Warn),
-                InboundOutcomeKind.Partial  => (Loc.Localize("LogPartial", "partly unresolved"), Theme.Unresolved),
+                InboundOutcomeKind.Skipped  => ($"{outcome.DetectedLanguage.ToUpperInvariant()} · {Tr.Get("LogSkipped", "skipped")}", Theme.TextMuted),
+                InboundOutcomeKind.Fallback => (Tr.Get("LogOriginal", "original"), Theme.Warn),
+                InboundOutcomeKind.Partial  => (Tr.Get("LogPartial", "partly unresolved"), Theme.Unresolved),
                 InboundOutcomeKind.Translated when !string.IsNullOrEmpty(outcome.DetectedLanguage) => (outcome.DetectedLanguage.ToUpperInvariant(), Theme.TextDim),
-                null => (Loc.Localize("LogNotTranslated", "not translated"), Theme.Warn),
+                null => (Tr.Get("LogNotTranslated", "not translated"), Theme.Warn),
                 _ => (string.Empty, Theme.TextDim),
             };
         if (text.Length > 0)
@@ -220,7 +259,7 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
                 any = true;
                 foreach (var alt in term.Alts)
                 {
-                    var altText = $"{Loc.Localize("LogAlt", "alt:")} {alt}";
+                    var altText = $"{Tr.Get("LogAlt", "alt:")} {alt}";
                     RichText.SameLineIfFits(altText);
                     RichText.Chip(altText, Theme.TextDim, Theme.ChipBg);
                 }
@@ -231,11 +270,11 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
         {
             foreach (var u in outcome.Segments.Where(s => s.Kind == SegmentKind.Unresolved))
             {
-                var text = $"{u.Text} → {Loc.Localize("LogNotInDictionary", "not in dictionary, kept as is")}";
+                var text = $"{u.Text} → {Tr.Get("LogNotInDictionary", "not in dictionary, kept as is")}";
                 if (any) RichText.SameLineIfFits(text);
                 RichText.Chip(text, Theme.Unresolved, Theme.ChipBg, dashedBorder: true);
                 ImGui.SameLine(0, 4);
-                if (ImGui.SmallButton(Loc.Localize("LogAddToDictionary", "Add to dictionary") + $"##{u.Text}"))
+                if (ImGui.SmallButton(Tr.Get("LogAddToDictionary", "Add to dictionary") + $"##{u.Text}"))
                 {
                     addSurface   = u.Text;
                     addMeaning   = u.Guess ?? string.Empty;
@@ -248,12 +287,12 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
                 ImGui.TextColored(Theme.TextMuted, reason);
         }
 
-        if (ImGui.SmallButton(Loc.Localize("LogReply", "Reply")))
+        if (ImGui.SmallButton(Tr.Get("LogReply", "Reply")))
             plugin.OpenReply((XivChatType)entry.Channel);
         if (outcome is not null)
         {
             ImGui.SameLine();
-            if (ImGui.SmallButton(Loc.Localize("LogInspect", "Inspect")))
+            if (ImGui.SmallButton(Tr.Get("LogInspect", "Inspect")))
                 plugin.OpenInspector(entry);
         }
     }
@@ -288,7 +327,7 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
 
         ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent);
         ImGui.PushStyleColor(ImGuiCol.Text, Theme.AccentText);
-        if (ImGui.SmallButton(string.Format(Loc.Localize("LogNewMessages", "{0} new ↓"), newCount)))
+        if (ImGui.SmallButton(string.Format(Tr.Get("LogNewMessages", "{0} new ↓"), newCount)))
             scrollToBottom = true;
         ImGui.PopStyleColor(2);
         ImGui.SameLine();
@@ -307,20 +346,20 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
 
         ImGui.SameLine();
         var model = config.Connection.InboundModel;
-        ImGui.TextColored(Theme.TextDim, string.IsNullOrWhiteSpace(model) ? Loc.Localize("LogNoModel", "(no model)") : model);
+        ImGui.TextColored(Theme.TextDim, string.IsNullOrWhiteSpace(model) ? Tr.Get("LogNoModel", "(no model)") : model);
 
         ImGui.SameLine();
         var stats = plugin.Glossary.Service.Stats;
         var version = stats.CommunityVersion ?? "-";
-        ImGui.TextColored(Theme.TextDim, string.Format(Loc.Localize("LogDictionary", "Dictionary {0} ({1:N0} terms)"), version, stats.Total));
+        ImGui.TextColored(Theme.TextDim, string.Format(Tr.Get("LogDictionary", "Dictionary {0} ({1:N0} terms)"), version, stats.Total));
 
         if (log.AverageLatency is { } avg)
         {
             ImGui.SameLine();
-            ImGui.TextColored(Theme.TextDim, string.Format(Loc.Localize("LogAverage", "avg {0:0.0}s"), avg.TotalSeconds));
+            ImGui.TextColored(Theme.TextDim, string.Format(Tr.Get("LogAverage", "avg {0:0.0}s"), avg.TotalSeconds));
         }
 
-        var label = Loc.Localize("LogInspectLatest", "Inspect latest");
+        var label = Tr.Get("LogInspectLatest", "Inspect latest");
         ImGui.SameLine();
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(label).X - 12));
         var disabled1 = !entries.Any(e => e.Outcome is not null);
@@ -334,7 +373,7 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
 
     private void DrawAddToDictionaryPopup()
     {
-        var popupId = Loc.Localize("AddDictTitle", "Add to my dictionary") + "##adddict";
+        var popupId = Tr.Get("AddDictTitle", "Add to my dictionary") + "##adddict";
         if (openAddPopup)
         {
             ImGui.OpenPopup(popupId);
@@ -345,24 +384,24 @@ public sealed class TranslationLogWindow : Window, IDisposable, IRelocalizable
 
         ImGui.TextUnformatted(addSurface);
         ImGui.SetNextItemWidth(320);
-        ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
+        ImGui.InputTextWithHint("##meaning", Tr.Get("AddDictMeaning", "Meaning"), ref addMeaning, 200);
 
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
         var disabled2 = !canSave;
         if (disabled2) ImGui.BeginDisabled();
-        if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
+        if (ImGui.Button(Tr.Get("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
         if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("AddDictCancel", "Cancel")))
+        if (ImGui.Button(Tr.Get("AddDictCancel", "Cancel")))
             ImGui.CloseCurrentPopup();
         ImGui.EndPopup();
     }
 
-    private static string Title() => Loc.Localize("LogWindowTitle", "AetherGlot — Translation Log") + "###AetherGlotLog";
+    private static string Title() => Tr.Get("LogWindowTitle", "AetherGlot — Translation Log") + "###AetherGlotLog";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

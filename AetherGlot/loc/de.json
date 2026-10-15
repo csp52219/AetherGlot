@@ -239,6 +239,14 @@
     "Message": "Schlüssel und Geheimnisse werden in der Windows-Anmeldeinformationsverwaltung gespeichert, nicht in der Einstellungsdatei.",
     "Description": ""
   },
+  "SaveFailed": {
+    "Message": "! Speichern nicht möglich: {0} (siehe dalamud.log)",
+    "Description": ""
+  },
+  "SaveDone": {
+    "Message": "✓ Gespeichert ({0:HH:mm:ss})",
+    "Description": ""
+  },
   "SaveBtn": {
     "Message": "Speichern",
     "Description": ""
@@ -297,6 +305,34 @@
   },
   "HelpSend": {
     "Message": "übersetzen und senden",
+    "Description": ""
+  },
+  "DiagSection": {
+    "Message": "Fehlerbehebung",
+    "Description": ""
+  },
+  "DiagWhere": {
+    "Message": "Start, Senden, Speichern, Warnungen und Fehler werden immer in dalamud.log geschrieben (mit /xllog öffnen).",
+    "Description": ""
+  },
+  "DiagVerbose": {
+    "Message": "Ausführliches Protokoll: Ziel und Ergebnis jeder Nachricht",
+    "Description": ""
+  },
+  "DiagText": {
+    "Message": "Auch Nachrichtentext und Namen protokollieren (Chat anderer Spieler)",
+    "Description": ""
+  },
+  "DiagCopy": {
+    "Message": "Diagnose kopieren",
+    "Description": ""
+  },
+  "DiagCopied": {
+    "Message": "✓ Kopiert. In den Fehlerbericht einfügen (ohne Schlüssel oder Geheimnisse).",
+    "Description": ""
+  },
+  "DiagCopyHint": {
+    "Message": "Einstellungsübersicht, letzter Verbindungstest und letzte Fehler; Schlüssel und Geheimnisse sind nie enthalten.",
     "Description": ""
   },
   "ModeLabel": {
@@ -641,6 +677,10 @@
   },
   "ShowBtn": {
     "Message": "Anzeigen",
+    "Description": ""
+  },
+  "SaveSettingsFile": {
+    "Message": "Einstellungsdatei",
     "Description": ""
   },
   "ConfigWindowTitle": {
@@ -1333,6 +1373,26 @@
   },
   "SendTonePolite": {
     "Message": "Höflich",
+    "Description": ""
+  },
+  "LogHiddenByFilter": {
+    "Message": "{0} durch den Filter ausgeblendet",
+    "Description": ""
+  },
+  "LogShowAll": {
+    "Message": "Alle anzeigen",
+    "Description": ""
+  },
+  "LogNotLogged": {
+    "Message": "Nicht in diesem Protokoll: {0}",
+    "Description": ""
+  },
+  "LogNotLoggedTip": {
+    "Message": "Diese Kanäle zeigen Übersetzungen an anderer Stelle an. Änderbar unter Einstellungen → Anzeige.",
+    "Description": ""
+  },
+  "LogOpenDisplay": {
+    "Message": "Anzeige-Einstellungen",
     "Description": ""
   },
   "LogShowOriginal": {

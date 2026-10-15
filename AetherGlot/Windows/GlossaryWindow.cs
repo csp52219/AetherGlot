@@ -150,7 +150,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         foreach (var (b, locKey, fallback) in Buckets)
         {
             var count = counts.TryGetValue(b, out var c) ? c : 0;
-            if (ImGui.Selectable($"{Loc.Localize(locKey, fallback)}  ({count:N0})##bucket{b}", !showPending && bucket == b))
+            if (ImGui.Selectable($"{Tr.Get(locKey, fallback)}  ({count:N0})##bucket{b}", !showPending && bucket == b))
             {
                 bucket = b;
                 showPending = false;
@@ -159,22 +159,22 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 
         ImGui.Separator();
         var pending = plugin.Glossary.Pending.Items.Count;
-        if (ImGui.Selectable($"{Loc.Localize("GlossaryPending", "Pending approval")}  ({pending:N0})##pending", showPending))
+        if (ImGui.Selectable($"{Tr.Get("GlossaryPending", "Pending approval")}  ({pending:N0})##pending", showPending))
             showPending = true;
 
         ImGui.Separator();
         var stats = plugin.Glossary.Service.Stats;
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("GlossaryUpdated", "Last updated"));
-        ImGui.TextColored(Theme.TextDim, $"{Loc.Localize("GlossaryCommunity", "Community")} v{stats.CommunityVersion ?? "-"}");
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("GlossaryUpdated", "Last updated"));
+        ImGui.TextColored(Theme.TextDim, $"{Tr.Get("GlossaryCommunity", "Community")} v{stats.CommunityVersion ?? "-"}");
         ImGui.TextColored(Theme.TextMuted, Time(stats.CommunityUpdated));
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("GlossaryGameData", "Game data"));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("GlossaryGameData", "Game data"));
         ImGui.TextColored(Theme.TextMuted, Time(stats.GameDataLoaded));
 
         ImGui.Spacing();
         var loading = plugin.Glossary.IsLoading;
         var disabled1 = loading;
         if (disabled1) ImGui.BeginDisabled();
-        if (ImGui.Button(loading ? Loc.Localize("GlossaryUpdating", "Updating…") : Loc.Localize("DictUpdateNow", "Update now"), new Vector2(-1, 0)))
+        if (ImGui.Button(loading ? Tr.Get("GlossaryUpdating", "Updating…") : Tr.Get("DictUpdateNow", "Update now"), new Vector2(-1, 0)))
             _ = plugin.Glossary.ReloadAsync(forceDownload: true);
         if (disabled1) ImGui.EndDisabled();
         if (plugin.Glossary.Community?.Error is { } error)
@@ -207,31 +207,31 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
     private void DrawSearch()
     {
         ImGui.SetNextItemWidth(Math.Max(120, ImGui.GetContentRegionAvail().X - 250));
-        ImGui.InputTextWithHint("##query", Loc.Localize("GlossarySearch", "Search English, Japanese or abbreviations"), ref query, 200);
+        ImGui.InputTextWithHint("##query", Tr.Get("GlossarySearch", "Search English, Japanese or abbreviations"), ref query, 200);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(130);
-        if (ImGui.BeginCombo("##kind", kindFilter is { } k ? KindLabel(k) : Loc.Localize("GlossaryAllKinds", "All kinds")))
+        if (ImGui.BeginCombo("##kind", kindFilter is { } k ? KindLabel(k) : Tr.Get("GlossaryAllKinds", "All kinds")))
         {
-            if (ImGui.Selectable(Loc.Localize("GlossaryAllKinds", "All kinds"), kindFilter is null)) kindFilter = null;
+            if (ImGui.Selectable(Tr.Get("GlossaryAllKinds", "All kinds"), kindFilter is null)) kindFilter = null;
             foreach (var kind in Enum.GetValues<TermKind>())
                 if (ImGui.Selectable(KindLabel(kind), kindFilter == kind)) kindFilter = kind;
             ImGui.EndCombo();
         }
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("GlossaryAdd", "+ Add")))
+        if (ImGui.Button(Tr.Get("GlossaryAdd", "+ Add")))
             StartNew(string.Empty);
 
-        ImGui.TextColored(Theme.TextMuted, string.Format(Loc.Localize("GlossaryResults", "{0:N0} terms"), results.Count));
+        ImGui.TextColored(Theme.TextMuted, string.Format(Tr.Get("GlossaryResults", "{0:N0} terms"), results.Count));
 
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.ScrollY |
                                       ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchProp;
         if (!ImGui.BeginTable("##terms", 5, flags)) return;
         ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColEn", "English / abbr."), ImGuiTableColumnFlags.WidthStretch, 3f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColJa", "Japanese"), ImGuiTableColumnFlags.WidthStretch, 3f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColKind", "Kind"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColRules", "Context"), ImGuiTableColumnFlags.WidthStretch, 1.2f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryColSource", "Source"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColEn", "English / abbr."), ImGuiTableColumnFlags.WidthStretch, 3f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColJa", "Japanese"), ImGuiTableColumnFlags.WidthStretch, 3f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColKind", "Kind"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColRules", "Context"), ImGuiTableColumnFlags.WidthStretch, 1.2f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryColSource", "Source"), ImGuiTableColumnFlags.WidthStretch, 1.4f);
         ImGui.TableHeadersRow();
 
         var clipper = ImGui.ImGuiListClipper();
@@ -265,7 +265,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         ImGui.TableNextColumn();
         var rules = GlossaryBrowser.RuleCount(e);
         if (e.IsPolysemous || rules > 0)
-            ImGui.TextColored(Theme.TermChip, string.Format(Loc.Localize("GlossaryRules", "{0} senses · {1} rules"), e.Senses.Count, rules));
+            ImGui.TextColored(Theme.TermChip, string.Format(Tr.Get("GlossaryRules", "{0} senses · {1} rules"), e.Senses.Count, rules));
         else
             ImGui.TextColored(Theme.TextMuted, "—");
         ImGui.TableNextColumn();
@@ -277,18 +277,18 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
     private void DrawPending()
     {
         var items = plugin.Glossary.Pending.Items;
-        ImGui.TextColored(Theme.TextDim, Loc.Localize("GlossaryPendingHelp", "Words the model could not translate. Register them so they are translated next time."));
+        ImGui.TextColored(Theme.TextDim, Tr.Get("GlossaryPendingHelp", "Words the model could not translate. Register them so they are translated next time."));
         if (items.Count == 0)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("GlossaryPendingEmpty", "Nothing pending."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("GlossaryPendingEmpty", "Nothing pending."));
             return;
         }
 
         if (!ImGui.BeginTable("##pending", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchProp)) return;
         ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryPendingWord", "Word"), ImGuiTableColumnFlags.WidthStretch, 2f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryPendingGuess", "Model's guess"), ImGuiTableColumnFlags.WidthStretch, 2f);
-        ImGui.TableSetupColumn(Loc.Localize("GlossaryPendingSeen", "Seen"), ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryPendingWord", "Word"), ImGuiTableColumnFlags.WidthStretch, 2f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryPendingGuess", "Model's guess"), ImGuiTableColumnFlags.WidthStretch, 2f);
+        ImGui.TableSetupColumn(Tr.Get("GlossaryPendingSeen", "Seen"), ImGuiTableColumnFlags.WidthStretch, 1f);
         ImGui.TableSetupColumn("##actions", ImGuiTableColumnFlags.WidthFixed, 130);
         ImGui.TableHeadersRow();
 
@@ -303,14 +303,14 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             ImGui.TableNextColumn();
             ImGui.TextColored(Theme.TextMuted, $"×{item.Count}");
             ImGui.TableNextColumn();
-            if (ImGui.SmallButton($"{Loc.Localize("GlossaryRegister", "Register")}##reg{item.Text}"))
+            if (ImGui.SmallButton($"{Tr.Get("GlossaryRegister", "Register")}##reg{item.Text}"))
             {
                 addSurface   = item.Text;
                 addMeaning   = item.Guess ?? string.Empty;
                 openAddPopup = true;
             }
             ImGui.SameLine();
-            if (ImGui.SmallButton($"{Loc.Localize("GlossaryIgnore", "Ignore")}##ign{item.Text}"))
+            if (ImGui.SmallButton($"{Tr.Get("GlossaryIgnore", "Ignore")}##ign{item.Text}"))
             {
                 var text = item.Text;
                 _ = Task.Run(() =>
@@ -324,7 +324,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 
     private void DrawRegisterPopup()
     {
-        var popupId = Loc.Localize("AddDictTitle", "Add to my dictionary") + "##glossaryadd";
+        var popupId = Tr.Get("AddDictTitle", "Add to my dictionary") + "##glossaryadd";
         if (openAddPopup)
         {
             ImGui.OpenPopup(popupId);
@@ -334,24 +334,24 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 
         ImGui.TextUnformatted(addSurface);
         ImGui.SetNextItemWidth(320);
-        ImGui.InputTextWithHint("##meaning", Loc.Localize("AddDictMeaning", "Meaning"), ref addMeaning, 200);
+        ImGui.InputTextWithHint("##meaning", Tr.Get("AddDictMeaning", "Meaning"), ref addMeaning, 200);
         var canSave = !string.IsNullOrWhiteSpace(addMeaning);
         var disabled2 = !canSave;
         if (disabled2) ImGui.BeginDisabled();
-        if (ImGui.Button(Loc.Localize("AddDictSave", "Save")))
+        if (ImGui.Button(Tr.Get("AddDictSave", "Save")))
         {
             plugin.AddToMyDictionary(addSurface, addMeaning.Trim());
             ImGui.CloseCurrentPopup();
         }
         if (disabled2) ImGui.EndDisabled();
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("GlossaryEditFull", "Edit with senses…")))
+        if (ImGui.Button(Tr.Get("GlossaryEditFull", "Edit with senses…")))
         {
             StartNew(addSurface);
             ImGui.CloseCurrentPopup();
         }
         ImGui.SameLine();
-        if (ImGui.Button(Loc.Localize("AddDictCancel", "Cancel")))
+        if (ImGui.Button(Tr.Get("AddDictCancel", "Cancel")))
             ImGui.CloseCurrentPopup();
         ImGui.EndPopup();
     }
@@ -385,7 +385,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         }
         if (selected is null)
         {
-            ImGui.TextColored(Theme.TextMuted, Loc.Localize("GlossarySelectHint", "Select a term to see its meanings, or add your own."));
+            ImGui.TextColored(Theme.TextMuted, Tr.Get("GlossarySelectHint", "Select a term to see its meanings, or add your own."));
             return;
         }
         DrawReadOnly(selected);
@@ -397,7 +397,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         ImGui.SameLine();
         ImGui.TextColored(Theme.TextDim, KindLabel(e.Kind));
         if (e.AutoTranslateId is { } at)
-            ImGui.TextColored(Theme.AutoTranslate, $"{Loc.Localize("GlossaryAtId", "Auto-translate")} {at}");
+            ImGui.TextColored(Theme.AutoTranslate, $"{Tr.Get("GlossaryAtId", "Auto-translate")} {at}");
         if (e.AliasesEn.Count > 0) Labeled("EN", GlossaryBrowser.FormatList(e.AliasesEn));
         if (e.AliasesJa.Count > 0) Labeled("JA", GlossaryBrowser.FormatList(e.AliasesJa));
         ImGui.Separator();
@@ -407,28 +407,28 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             ImGui.TextColored(Theme.Accent, $"{i + 1}.");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{s.En}  ⇔  {s.Ja}");
-            if (s.Priority != 0) Labeled(Loc.Localize("GlossaryPriority", "Priority"), s.Priority.ToString());
-            if (s.Rules.InCombat is { } c) Labeled(Loc.Localize("GlossaryInCombat", "Combat"), c ? Loc.Localize("GlossaryInCombatYes", "in combat") : Loc.Localize("GlossaryInCombatNo", "out of combat"));
-            if (s.Rules.Words.Count > 0) Labeled(Loc.Localize("GlossaryWords", "Words"), GlossaryBrowser.FormatList(s.Rules.Words));
-            if (s.Rules.PartyJobs.Count > 0) Labeled(Loc.Localize("GlossaryJobs", "Party jobs"), GlossaryBrowser.FormatList(s.Rules.PartyJobs));
-            if (s.Note is { Length: > 0 } note) Labeled(Loc.Localize("GlossaryNote", "Note"), note);
+            if (s.Priority != 0) Labeled(Tr.Get("GlossaryPriority", "Priority"), s.Priority.ToString());
+            if (s.Rules.InCombat is { } c) Labeled(Tr.Get("GlossaryInCombat", "Combat"), c ? Tr.Get("GlossaryInCombatYes", "in combat") : Tr.Get("GlossaryInCombatNo", "out of combat"));
+            if (s.Rules.Words.Count > 0) Labeled(Tr.Get("GlossaryWords", "Words"), GlossaryBrowser.FormatList(s.Rules.Words));
+            if (s.Rules.PartyJobs.Count > 0) Labeled(Tr.Get("GlossaryJobs", "Party jobs"), GlossaryBrowser.FormatList(s.Rules.PartyJobs));
+            if (s.Note is { Length: > 0 } note) Labeled(Tr.Get("GlossaryNote", "Note"), note);
             ImGui.Spacing();
         }
         if (e.IsPolysemous)
-            Labeled(Loc.Localize("GlossaryOnAmbiguous", "When unsure"), AmbiguityLabel(e.OnAmbiguous));
+            Labeled(Tr.Get("GlossaryOnAmbiguous", "When unsure"), AmbiguityLabel(e.OnAmbiguous));
 
         ImGui.Separator();
-        if (ImGui.Button(Loc.Localize("GlossaryCopyToMine", "Copy to My dictionary and edit")))
+        if (ImGui.Button(Tr.Get("GlossaryCopyToMine", "Copy to My dictionary and edit")))
         {
             editor = Editor.From(GlossaryBrowser.CopyAsUser(e), isNew: true);
             editorError = null;
         }
-        ImGui.TextColored(Theme.TextMuted, Loc.Localize("GlossaryPrecedence", "My dictionary > game data > community."));
+        ImGui.TextColored(Theme.TextMuted, Tr.Get("GlossaryPrecedence", "My dictionary > game data > community."));
     }
 
     private void DrawEditor(Editor ed)
     {
-        ImGui.TextColored(Theme.Accent, ed.IsNew ? Loc.Localize("GlossaryNewEntry", "New entry (My dictionary)") : Loc.Localize("GlossaryEditEntry", "Edit (My dictionary)"));
+        ImGui.TextColored(Theme.Accent, ed.IsNew ? Tr.Get("GlossaryNewEntry", "New entry (My dictionary)") : Tr.Get("GlossaryEditEntry", "Edit (My dictionary)"));
         if (!ed.IsNew) ImGui.TextColored(Theme.TextMuted, ed.Id);
 
         ImGui.SetNextItemWidth(-1);
@@ -439,9 +439,9 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             ImGui.EndCombo();
         }
         ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##aen", Loc.Localize("GlossaryAliasesEn", "English spellings / abbreviations (comma separated)"), ref ed.AliasesEn, 400);
+        ImGui.InputTextWithHint("##aen", Tr.Get("GlossaryAliasesEn", "English spellings / abbreviations (comma separated)"), ref ed.AliasesEn, 400);
         ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##aja", Loc.Localize("GlossaryAliasesJa", "Japanese spellings (comma separated)"), ref ed.AliasesJa, 400);
+        ImGui.InputTextWithHint("##aja", Tr.Get("GlossaryAliasesJa", "Japanese spellings (comma separated)"), ref ed.AliasesJa, 400);
 
         ImGui.Separator();
         var removeAt = -1;
@@ -449,11 +449,11 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         {
             var s = ed.Senses[i];
             ImGui.PushID($"sense{i}");
-            ImGui.TextColored(Theme.Accent, $"{Loc.Localize("GlossarySense", "Meaning")} {i + 1}");
+            ImGui.TextColored(Theme.Accent, $"{Tr.Get("GlossarySense", "Meaning")} {i + 1}");
             if (ed.Senses.Count > 1)
             {
                 ImGui.SameLine();
-                if (ImGui.SmallButton(Loc.Localize("GlossaryRemoveSense", "Remove"))) removeAt = i;
+                if (ImGui.SmallButton(Tr.Get("GlossaryRemoveSense", "Remove"))) removeAt = i;
             }
             ImGui.SetNextItemWidth(-1);
             ImGui.InputTextWithHint("##en", "English", ref s.En, 200);
@@ -461,34 +461,34 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             ImGui.InputTextWithHint("##ja", "日本語", ref s.Ja, 200);
 
             ImGui.SetNextItemWidth(90);
-            ImGui.InputInt(Loc.Localize("GlossaryPriority", "Priority") + "##prio", ref s.Priority);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.Localize("GlossaryPriorityTip", "Lower wins when nothing else decides."));
+            ImGui.InputInt(Tr.Get("GlossaryPriority", "Priority") + "##prio", ref s.Priority);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Tr.Get("GlossaryPriorityTip", "Lower wins when nothing else decides."));
 
-            ImGui.TextUnformatted(Loc.Localize("GlossaryInCombat", "Combat"));
+            ImGui.TextUnformatted(Tr.Get("GlossaryInCombat", "Combat"));
             ImGui.SameLine();
-            if (ImGui.RadioButton(Loc.Localize("GlossaryEither", "either") + "##c0", s.InCombat == 0)) s.InCombat = 0;
+            if (ImGui.RadioButton(Tr.Get("GlossaryEither", "either") + "##c0", s.InCombat == 0)) s.InCombat = 0;
             ImGui.SameLine();
-            if (ImGui.RadioButton(Loc.Localize("GlossaryInCombatYes", "in combat") + "##c1", s.InCombat == 1)) s.InCombat = 1;
+            if (ImGui.RadioButton(Tr.Get("GlossaryInCombatYes", "in combat") + "##c1", s.InCombat == 1)) s.InCombat = 1;
             ImGui.SameLine();
-            if (ImGui.RadioButton(Loc.Localize("GlossaryInCombatNo", "out of combat") + "##c2", s.InCombat == 2)) s.InCombat = 2;
+            if (ImGui.RadioButton(Tr.Get("GlossaryInCombatNo", "out of combat") + "##c2", s.InCombat == 2)) s.InCombat = 2;
 
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##words", Loc.Localize("GlossaryWordsHint", "Words seen with this meaning (brb, dot, …)"), ref s.Words, 400);
+            ImGui.InputTextWithHint("##words", Tr.Get("GlossaryWordsHint", "Words seen with this meaning (brb, dot, …)"), ref s.Words, 400);
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##jobs", Loc.Localize("GlossaryJobsHint", "Party jobs that suggest it (SCH, WHM, …)"), ref s.PartyJobs, 200);
+            ImGui.InputTextWithHint("##jobs", Tr.Get("GlossaryJobsHint", "Party jobs that suggest it (SCH, WHM, …)"), ref s.PartyJobs, 200);
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##note", Loc.Localize("GlossaryNote", "Note"), ref s.Note, 200);
+            ImGui.InputTextWithHint("##note", Tr.Get("GlossaryNote", "Note"), ref s.Note, 200);
             ImGui.Separator();
             ImGui.PopID();
         }
         if (removeAt >= 0) ed.Senses.RemoveAt(removeAt);
 
-        if (ImGui.Button(Loc.Localize("GlossaryAddSense", "+ Add meaning")))
+        if (ImGui.Button(Tr.Get("GlossaryAddSense", "+ Add meaning")))
             ed.Senses.Add(new SenseEdit { Priority = ed.Senses.Count });
 
         if (ed.Senses.Count > 1)
         {
-            ImGui.TextUnformatted(Loc.Localize("GlossaryOnAmbiguous", "When unsure"));
+            ImGui.TextUnformatted(Tr.Get("GlossaryOnAmbiguous", "When unsure"));
             ImGui.SameLine();
             if (ImGui.RadioButton(AmbiguityLabel(AmbiguityBehavior.ShowAll), ed.OnAmbiguous == AmbiguityBehavior.ShowAll)) ed.OnAmbiguous = AmbiguityBehavior.ShowAll;
             ImGui.SameLine();
@@ -500,18 +500,18 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         if (disabled3) ImGui.BeginDisabled();
         ImGui.PushStyleColor(ImGuiCol.Button, Theme.Accent);
         ImGui.PushStyleColor(ImGuiCol.Text, Theme.AccentText);
-        var save = ImGui.Button(Loc.Localize("GlossarySave", "Save"));
+        var save = ImGui.Button(Tr.Get("GlossarySave", "Save"));
         ImGui.PopStyleColor(2);
         ImGui.SameLine();
-        var cancel = ImGui.Button(Loc.Localize("AddDictCancel", "Cancel"));
+        var cancel = ImGui.Button(Tr.Get("AddDictCancel", "Cancel"));
         var delete = false;
         if (!ed.IsNew)
         {
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Text, Theme.Error);
-            delete = ImGui.Button(Loc.Localize("GlossaryDelete", "Delete")) && ImGui.GetIO().KeyShift;
+            delete = ImGui.Button(Tr.Get("GlossaryDelete", "Delete")) && ImGui.GetIO().KeyShift;
             ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.Localize("GlossaryDeleteTip", "Hold Shift and click to delete."));
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Tr.Get("GlossaryDeleteTip", "Hold Shift and click to delete."));
         }
         if (disabled3) ImGui.EndDisabled();
 
@@ -543,7 +543,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
         }
         if (ed.IsNew && plugin.Glossary.User.Entries.Any(e => e.Id == entry.Id))
         {
-            editorError = string.Format(Loc.Localize("GlossaryDuplicate", "\"{0}\" is already in My dictionary; edit that entry instead."), entry.Id);
+            editorError = string.Format(Tr.Get("GlossaryDuplicate", "\"{0}\" is already in My dictionary; edit that entry instead."), entry.Id);
             return;
         }
 
@@ -563,7 +563,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             }
             catch (Exception ex)
             {
-                editorError = string.Format(Loc.Localize("GlossarySaveFailed", "Could not save ({0})."), ex.GetType().Name);
+                editorError = string.Format(Tr.Get("GlossarySaveFailed", "Could not save ({0})."), ex.GetType().Name);
                 Plugin.Log.Error("[AetherGlot] Could not save {File} ({Type}).", GlossaryManager.UserFileName, ex.GetType().Name);
             }
             finally
@@ -587,7 +587,7 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
             }
             catch (Exception ex)
             {
-                editorError = string.Format(Loc.Localize("GlossarySaveFailed", "Could not save ({0})."), ex.GetType().Name);
+                editorError = string.Format(Tr.Get("GlossarySaveFailed", "Could not save ({0})."), ex.GetType().Name);
             }
             finally
             {
@@ -609,24 +609,24 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
 
     internal static string KindLabel(TermKind kind) => kind switch
     {
-        TermKind.AutoTranslate => Loc.Localize("KindAutoTranslate", "Auto-translate"),
-        TermKind.Action        => Loc.Localize("KindAction", "Action"),
-        TermKind.Status        => Loc.Localize("KindStatus", "Status"),
-        TermKind.Job           => Loc.Localize("KindJob", "Job"),
-        TermKind.Content       => Loc.Localize("KindContent", "Duty"),
-        TermKind.Place         => Loc.Localize("KindPlace", "Place"),
-        TermKind.Mechanic      => Loc.Localize("KindMechanic", "Mechanic"),
-        TermKind.Slang         => Loc.Localize("KindSlang", "Slang"),
-        TermKind.Abbreviation  => Loc.Localize("KindAbbreviation", "Abbreviation"),
-        _                      => Loc.Localize("KindOther", "Other"),
+        TermKind.AutoTranslate => Tr.Get("KindAutoTranslate", "Auto-translate"),
+        TermKind.Action        => Tr.Get("KindAction", "Action"),
+        TermKind.Status        => Tr.Get("KindStatus", "Status"),
+        TermKind.Job           => Tr.Get("KindJob", "Job"),
+        TermKind.Content       => Tr.Get("KindContent", "Duty"),
+        TermKind.Place         => Tr.Get("KindPlace", "Place"),
+        TermKind.Mechanic      => Tr.Get("KindMechanic", "Mechanic"),
+        TermKind.Slang         => Tr.Get("KindSlang", "Slang"),
+        TermKind.Abbreviation  => Tr.Get("KindAbbreviation", "Abbreviation"),
+        _                      => Tr.Get("KindOther", "Other"),
     };
 
     private static string SourceLabel(TermEntry e) => GlossaryBrowser.BucketOf(e) switch
     {
-        GlossaryBucket.Mine          => Loc.Localize("GlossaryMine", "My dictionary"),
-        GlossaryBucket.Community     => Loc.Localize("GlossaryCommunity", "Community"),
-        GlossaryBucket.AutoTranslate => Loc.Localize("GlossaryAt", "Auto-translate"),
-        _                            => Loc.Localize("GlossaryGameData", "Game data"),
+        GlossaryBucket.Mine          => Tr.Get("GlossaryMine", "My dictionary"),
+        GlossaryBucket.Community     => Tr.Get("GlossaryCommunity", "Community"),
+        GlossaryBucket.AutoTranslate => Tr.Get("GlossaryAt", "Auto-translate"),
+        _                            => Tr.Get("GlossaryGameData", "Game data"),
     };
 
     private static Vector4 SourceColor(TermSource source) => source switch
@@ -637,10 +637,10 @@ public sealed class GlossaryWindow : Window, IDisposable, IRelocalizable
     };
 
     private static string AmbiguityLabel(AmbiguityBehavior b) => b == AmbiguityBehavior.ShowAll
-        ? Loc.Localize("GlossaryShowAll", "show every meaning")
-        : Loc.Localize("GlossaryPreferFirst", "use the top priority");
+        ? Tr.Get("GlossaryShowAll", "show every meaning")
+        : Tr.Get("GlossaryPreferFirst", "use the top priority");
 
-    private static string Title() => Loc.Localize("GlossaryTitle", "AetherGlot — Dictionary") + "###AetherGlotGlossary";
+    private static string Title() => Tr.Get("GlossaryTitle", "AetherGlot — Dictionary") + "###AetherGlotGlossary";
 
     /// <summary>Re-reads the localized title after the Dalamud language changes.</summary>
     public void Relocalize() => WindowName = Title();

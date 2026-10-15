@@ -48,6 +48,12 @@ internal static class ConfigurationMigrator
             changed = true;
         }
 
+        if (config.Version < 4)
+        {
+            config.Display.GameChat.MigrateToV4();
+            changed = true;
+        }
+
         // Older builds let the loader append saved channels to the defaults (duplicates)
         var distinct = config.EnabledChannels.Distinct().ToList();
         if (distinct.Count != config.EnabledChannels.Count)
