@@ -15,7 +15,7 @@
     <Tags>translation;chat;ai;llm</Tags>
   </PropertyGroup>
 
-  <!-- CheapLoc is in the Dalamud dev folder but is not auto-referenced by SDK 14 -->
+  <!-- CheapLoc is in the Dalamud dev folder but is not auto-referenced by the SDK -->
   <ItemGroup>
     <Reference Include="CheapLoc" Private="false" />
   </ItemGroup>
@@ -23,6 +23,13 @@
   <!-- Core class library (no Dalamud deps — also referenced by AetherGlot.Tests) -->
   <ItemGroup>
     <ProjectReference Include="..\AetherGlot.Core\AetherGlot.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Bundled community dictionary (used offline / until the first download) -->
+  <ItemGroup>
+    <Content Include="..\community-glossary\glossary.json" Link="community-glossary.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!-- Copy locale files to output directory -->

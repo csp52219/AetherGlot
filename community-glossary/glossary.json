@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "name": "AetherGlot community glossary",
+  "version": "2026.10.15",
+  "updated": "2026-10-15",
+  "entries": [
+    { "id": "opo-opo-form", "kind": "status", "en": "Opo-opo Form", "ja": "壱の型：魔猿", "aliases": ["opo", "opo-opo", "opo opo"], "aliasesJa": ["魔猿"] },
+    { "id": "raptor-form", "kind": "status", "en": "Raptor Form", "ja": "弐の型：走竜", "aliases": ["raptor", "rapu"], "aliasesJa": ["走竜"] },
+    { "id": "coeurl-form", "kind": "status", "en": "Coeurl Form", "ja": "参の型：猛虎", "aliases": ["coeurl", "kua-ru", "kuaru"], "aliasesJa": ["猛虎"] },
+
+    {
+      "id": "bio", "kind": "slang", "en": "bio", "onAmbiguous": "showAll",
+      "senses": [
+        { "id": "action", "ja": "バイオ（技）", "en": "Bio", "priority": 1,
+          "when": { "inCombat": true, "words": ["dot", "dots", "reapply", "refresh", "fell off", "uptime", "boss"], "partyJobs": ["SCH", "ACN", "SMN"] } },
+        { "id": "afk", "ja": "トイレ（離席）", "en": "bathroom break", "priority": 2,
+          "when": { "inCombat": false, "words": ["brb", "afk", "sec", "min", "mins", "back", "bbl"] } }
+      ]
+    },
+    {
+      "id": "pull", "kind": "slang", "en": "pull", "onAmbiguous": "showAll",
+      "senses": [
+        { "id": "attempt", "ja": "トライ", "en": "attempt", "priority": 1,
+          "when": { "words": ["wipe", "next", "again", "last", "good", "bad", "mid", "reset"] } },
+        { "id": "aggro", "ja": "釣る（敵を引き寄せる）", "en": "pull (enemies)", "priority": 2,
+          "when": { "inCombat": false, "words": ["mobs", "pack", "packs", "adds", "wall", "big", "tank"] } }
+      ]
+    },
+
+    { "id": "stack", "kind": "mechanic", "en": "stack", "ja": "頭割り", "aliases": ["stack up", "stack marker"] },
+    { "id": "spread", "kind": "mechanic", "en": "spread", "ja": "散開", "aliases": ["spread out"] },
+    { "id": "tankbuster", "kind": "mechanic", "en": "tankbuster", "ja": "タンク強攻撃", "aliases": ["tank buster", "tb", "buster"] },
+    { "id": "raidwide", "kind": "mechanic", "en": "raidwide", "ja": "全体攻撃", "aliases": ["raid-wide", "raid wide"] },
+    { "id": "aoe", "kind": "mechanic", "en": "AoE", "ja": "範囲攻撃", "aliases": ["aoe", "aoes"] },
+    { "id": "knockback", "kind": "mechanic", "en": "knockback", "ja": "ノックバック", "aliases": ["kb", "knock back"] },
+    { "id": "enrage", "kind": "mechanic", "en": "enrage", "ja": "時間切れ（エンレイジ）", "aliases": ["hard enrage"] },
+    { "id": "wipe", "kind": "mechanic", "en": "wipe", "ja": "全滅", "aliases": ["wiped"] },
+    { "id": "adds", "kind": "mechanic", "en": "adds", "ja": "雑魚（追加の敵）" },
+    { "id": "mitigation", "kind": "mechanic", "en": "mitigation", "ja": "軽減", "aliases": ["mit", "mits"] },
+    { "id": "tank-swap", "kind": "mechanic", "en": "tank swap", "ja": "タンクスイッチ", "aliases": ["swap", "tankswap"] },
+    { "id": "limit-break", "kind": "mechanic", "en": "limit break", "ja": "リミットブレイク", "aliases": ["lb", "lb3"] },
+    { "id": "raise", "kind": "mechanic", "en": "raise", "ja": "蘇生", "aliases": ["rez", "res", "rezz"] },
+    { "id": "dps-check", "kind": "mechanic", "en": "DPS check", "ja": "DPSチェック", "aliases": ["dps check"] },
+    { "id": "vuln", "kind": "mechanic", "en": "vulnerability up", "ja": "被ダメージ上昇", "aliases": ["vuln", "vulns"] },
+    { "id": "positional", "kind": "mechanic", "en": "positional", "ja": "方向指定", "aliases": ["positionals"] },
+    { "id": "rear", "kind": "mechanic", "en": "rear", "ja": "背面" },
+    { "id": "flank", "kind": "mechanic", "en": "flank", "ja": "側面" },
+    { "id": "uptime", "kind": "mechanic", "en": "uptime", "ja": "維持率（切らさないこと）" },
+    { "id": "main-tank", "kind": "abbreviation", "en": "main tank", "ja": "メインタンク", "aliases": ["mt"] },
+    { "id": "off-tank", "kind": "abbreviation", "en": "off tank", "ja": "サブタンク", "aliases": ["ot"] },
+    { "id": "strat", "kind": "slang", "en": "strat", "ja": "攻略法", "aliases": ["strats", "strategy"] },
+    { "id": "prog", "kind": "slang", "en": "prog", "ja": "攻略中（進行）", "aliases": ["progression"] },
+    { "id": "farm", "kind": "slang", "en": "farm", "ja": "周回", "aliases": ["farming"] },
+
+    { "id": "brb", "kind": "slang", "en": "brb", "ja": "すぐ戻ります" },
+    { "id": "afk", "kind": "slang", "en": "afk", "ja": "離席" },
+    { "id": "bbl", "kind": "slang", "en": "bbl", "ja": "あとで戻ります" },
+    { "id": "gg", "kind": "slang", "en": "gg", "ja": "お疲れさまでした" },
+    { "id": "gl", "kind": "slang", "en": "gl", "ja": "頑張りましょう", "aliases": ["glhf"] },
+    { "id": "ty", "kind": "slang", "en": "ty", "ja": "ありがとう", "aliases": ["thx", "tyvm"] },
+    { "id": "tyfp", "kind": "slang", "en": "tyfp", "ja": "パーティーありがとうございました", "aliases": ["ty4p"] },
+    { "id": "np", "kind": "slang", "en": "np", "ja": "どういたしまして" },
+    { "id": "omw", "kind": "slang", "en": "omw", "ja": "向かっています" },
+    { "id": "ngl", "kind": "slang", "en": "ngl", "ja": "正直" },
+    { "id": "mid", "kind": "slang", "en": "mid", "ja": "微妙" },
+    { "id": "idk", "kind": "slang", "en": "idk", "ja": "わからない" },
+    { "id": "imo", "kind": "slang", "en": "imo", "ja": "個人的には", "aliases": ["imho"] },
+    { "id": "rdy", "kind": "slang", "en": "rdy", "ja": "準備OK", "aliases": ["rdy?"] },
+    { "id": "inc", "kind": "slang", "en": "inc", "ja": "来るよ" },
+    { "id": "lfg", "kind": "slang", "en": "lfg", "ja": "メンバー募集" },
+    { "id": "wb", "kind": "slang", "en": "wb", "ja": "おかえり" },
+    { "id": "grats", "kind": "slang", "en": "grats", "ja": "おめでとう", "aliases": ["gratz", "gz", "congrats"] }
+  ]
+}
