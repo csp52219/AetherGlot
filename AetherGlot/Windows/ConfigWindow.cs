@@ -513,6 +513,13 @@ public sealed class ConfigWindow : Window, IDisposable
         }
         if (reloadingGlossary) ImGui.EndDisabled();
 
+        ImGui.SameLine();
+        if (ImGui.Button(Loc.Localize("DictOpenWindow", "Open dictionary")))
+            plugin.OpenGlossary();
+        ImGui.SameLine();
+        if (ImGui.Button(Loc.Localize("DictOpenAt", "Auto-translate list")))
+            plugin.OpenAutoTranslate();
+
         if (plugin.Glossary.Community?.Error is { } error)
             ImGui.TextColored(Theme.Warn, error);
     }

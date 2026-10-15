@@ -50,6 +50,9 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>Default channel used for the outbound send preview window.</summary>
     public XivChatType DefaultOutboundChannel { get; set; } = XivChatType.Party;
 
+    /// <summary>Last tone chosen in the send preview (short / normal / polite).</summary>
+    public OutboundTone OutboundTone { get; set; } = OutboundTone.Normal;
+
     public const string DefaultOutboundPrompt =
         "You are a player in an MMORPG. Translate the user's input into natural English.\n" +
         "- Keep it very casual. Avoid formal grammar or structures.\n" +
