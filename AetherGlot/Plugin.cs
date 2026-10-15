@@ -180,7 +180,9 @@ public sealed class Plugin : IDalamudPlugin
         try
         {
             var locDir  = Path.Combine(PluginInterface.AssemblyLocation.DirectoryName!, "loc");
-            var lang    = string.IsNullOrWhiteSpace(language) ? "en" : language;
+            // Dalamud passes lowercase two-letter codes; normalise anyway and only accept shipped languages
+            var lang    = string.IsNullOrWhiteSpace(language) ? "en" : language.Split('-', '_')[0].Trim().ToLowerInvariant();
+            if (lang is not ("en" or "ja" or "de" or "fr")) lang = "en";
             var locFile = Path.Combine(locDir, $"{lang}.json");
             if (!File.Exists(locFile))
                 locFile = Path.Combine(locDir, "en.json");

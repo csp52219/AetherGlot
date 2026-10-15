@@ -34,7 +34,7 @@ A [Dalamud](https://github.com/goatcorp/Dalamud) plugin for **Final Fantasy XIV*
 1. In Dalamud Settings → *Experimental* tab, enable **Developer Mode**.
 2. Under **Custom Plugin Repositories**, add the following URL:
    ```
-   https://github.com/spencomeister/AetherGlot/releases/latest/download/repo.json
+   https://github.com/csp52219/AetherGlot/releases/latest/download/repo.json
    ```
 3. Click the reload button, then install *AetherGlot* from *All Plugins*.
 
